@@ -1,8 +1,6 @@
 import {VercelRequest} from '@vercel/node'
-import * as fs from 'fs'
 import {Db, MongoClient} from 'mongodb'
 import Redis from 'ioredis'
-import path from 'path'
 
 let db: Db
 const redis = process.env['REDIS_URL'] ? new Redis(process.env['REDIS_URL']!) : new Redis({
@@ -71,53 +69,4 @@ async function ipCount(key: string, ip: string, time: number): Promise<number> {
     const [error, result] = (await multi.exec())![2]
     if (error) throw error
     return result as number
-}
-
-export type IpLocation = {countryCode: string, prov?: string}
-
-const ipLocationCache = new Map<string, IpLocation>()
-//let ipReaderCache: Promise<ReaderModel>
-let regionJson: Array<any>
-
-/** 获取指定 IP 的地理位置 */
-export async function getIpLocation(ip: string): Promise<IpLocation> {
-    if (ip === '::1' || ip === '127.0.0.1')
-        return {countryCode: 'CN'}
-    const cache = ipLocationCache.get(ip)
-    if (cache) return cache
-    if (!regionJson)
-        regionJson = JSON.parse(fs.readFileSync(path.resolve('./', 'region.json'), 'utf-8'))
-    const dist = ipv4ToNumber(ip)
-    let left = 0, right = regionJson.length
-    do {
-        const mid = (left + right) >>> 1
-        const item = regionJson[mid]
-        if (item.end < dist) left = mid + 1
-        else if (item.start > dist) right = mid - 1
-        else return {
-                countryCode: 'CN',
-                prov: item['loc']
-            }
-    } while (left <= right)
-    return {
-        countryCode: 'unknown',
-        prov: 'unknown'
-    }
-    // if (!ipReaderCache)
-    //     ipReaderCache = Reader.open(path.resolve('./', 'city.mmdb'))
-    // return ipReaderCache.then(reader => {
-    //     const result = reader.city(ip)
-    //     return {
-    //         countryCode: result.registeredCountry?.isoCode ?? 'unknown',
-    //         prov: result.subdivisions?.[0]?.names['zh-CN']
-    //     }
-    // })
-}
-
-function ipv4ToNumber(ip: string): number {
-    let result = 0
-    ip.split('.')
-        .map(it => Number.parseInt(it))
-        .forEach(it => result = (result << 8) | it)
-    return result >>> 0
 }
