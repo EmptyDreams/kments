@@ -1,5 +1,6 @@
 import {VercelRequest, VercelResponse} from "@vercel/node"
 import { findOnVercel} from 'ip-china-location'
+import path from 'path'
 import {getUserIp, rateLimit} from './utils'
 
 export default async function(request: VercelRequest, response: VercelResponse) {
@@ -11,7 +12,7 @@ export default async function(request: VercelRequest, response: VercelResponse) 
     // )
     // if (limitStatus !== 200)
     //     return response.status(limitStatus).end()
-    const location = findOnVercel(request)
+    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'))
     console.log(`${ip}: ${location}`)
     response.status(200).send(location)
 
