@@ -4,6 +4,7 @@ import path from 'path'
 import {calcHash, connectDatabase, getUserIp} from './utils'
 import * as HTMLChecker from 'fast-html-checker'
 
+// noinspection JSUnusedGlobalSymbols
 /** 发布一个评论 */
 export default function (request: VercelRequest, response: VercelResponse) {
     const ip = getUserIp(request)
@@ -17,7 +18,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
         msg: '禁止海外用户发表评论'
     })
     // 提取评论内容
-    const commentBody = extractInfo(request)
+    const commentBody = extractInfo(request, ip)
     if (typeof commentBody === 'string') {
         return response.status(400).json({
             status: 400,
@@ -41,9 +42,9 @@ export default function (request: VercelRequest, response: VercelResponse) {
 }
 
 /** 从请求中提取评论信息 */
-function extractInfo(request: VercelRequest): CommentBody | string {
+function extractInfo(request: VercelRequest, ip: string): CommentBody | string {
     const json = request.body
-    const list = ['name', 'email', 'page', 'content']
+    const list = ['name', 'email', 'page', 'content', 'link']
     for (let key of list) {
         if (!(key in json))
             return `${key} 值缺失`
@@ -54,7 +55,7 @@ function extractInfo(request: VercelRequest): CommentBody | string {
         email: json.email,
         emailMd5: calcHash('md5', json.email),
         link: json.link,
-        ip: request.socket.remoteAddress!,
+        ip,
         page: json.page,
         time: new Date().toUTCString(),
         content: json.content
