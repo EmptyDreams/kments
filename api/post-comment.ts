@@ -1,5 +1,4 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import * as crypto from 'crypto'
 import {findOnVercel} from 'ip-china-location'
 import path from 'path'
 import {calcHash, connectDatabase, getUserIp} from './utils'
