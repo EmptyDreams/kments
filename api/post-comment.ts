@@ -7,11 +7,19 @@ import * as HTMLChecker from 'fast-html-checker'
 // noinspection JSUnusedGlobalSymbols
 /** 发布一个评论 */
 export default function (request: VercelRequest, response: VercelResponse) {
+    // 检查访问方法
+    if (request.method !== 'POST')
+        return response.status(200).json({
+            status: 405,
+            msg: '仅支持 POST 访问'
+        })
+    // 提取和检查 IP
     const ip = getUserIp(request)
     if (!ip) return response.status(200).json({
         status: 400,
         msg: '请求缺少 IP 信息'
     })
+    // 提取和检查用户地址
     const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
     if (!location) return response.status(200).json({
         status: 403,
