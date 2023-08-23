@@ -1,46 +1,44 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import * as crypto from 'crypto'
-import fetch from 'node-fetch'
-import {connectDatabase, getIpLocation} from './utils'
+import {findOnVercel} from 'ip-china-location'
+import path from 'path'
+import {calcHash, connectDatabase, getUserIp} from './utils'
+import * as HTMLChecker from 'fast-html-checker'
 
 /** 发布一个评论 */
-export async function postComment(request: VercelRequest, response: VercelResponse) {
-    const ip = request.socket.remoteAddress
-    if (!ip) return response.status(403).end()
-    const location = getIpLocation(ip).then(json => {
-        if (json.countryCode !== 'CN') {
-            response.status(403).end()
-            return false
-        }
-        return json
+export default function (request: VercelRequest, response: VercelResponse) {
+    const ip = getUserIp(request)
+    if (!ip) return response.status(200).json({
+        status: 400,
+        msg: '请求缺少 IP 信息'
     })
+    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
+    if (!location) return response.status(200).json({
+        status: 403,
+        msg: '禁止海外用户发表评论'
+    })
+    // 提取评论内容
     const commentBody = extractInfo(request)
-    if (response.writableEnded) return
     if (typeof commentBody === 'string') {
-        return response.status(400).send(commentBody)
+        return response.status(400).json({
+            status: 400,
+            msg: commentBody
+        })
     }
-
+    // 检查是否允许发布
     const checkResult = checkComment(commentBody)
-    if (response.writableEnded) return
     if (typeof checkResult === 'string') {
         return response.status(200).json({
             status: 403,
             message: checkResult
         })
-    } else if (!checkResult) {
-        return response.status(500).end()
     }
-
-    const db = await connectDatabase()
-    location.then(async json => {
-        if (!json) return
-        await db.collection('comments')
-            .insertOne(commentBody)
-        response.status(200).end()
-    }).catch(err => {
-        console.error(err)
-        response.status(500).end()
-    })
+    // 发表评论
+    connectDatabase()
+        .then(db => db.collection('comments').insertOne(commentBody))
+        .then(() => response.status(200).json({
+            status: 200
+        }))
 }
 
 /** 从请求中提取评论信息 */
@@ -52,9 +50,10 @@ function extractInfo(request: VercelRequest): CommentBody | string {
             return `${key} 值缺失`
     }
     return {
+        kmId: calcHash('md5', `${json.email}+${json.name}+${Date.now()}`),
         name: json.name,
         email: json.email,
-        emailMd5: crypto.createHash('md5').update(json.email).digest('hex'),
+        emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip: request.socket.remoteAddress!,
         page: json.page,
@@ -77,10 +76,15 @@ function checkComment(body: CommentBody): boolean | string {
         return '用户名称包含违规内容'
     if (blocked.link.test(body.link))
         return '用户主页已被屏蔽'
+    if (HTMLChecker.check(body.content, {
+            allowTags: ['a', 'strong']
+        })
+    ) return '用户评论包含非法内容'
     return true
 }
 
 interface CommentBody {
+    kmId: string,
     /** 发表用户的名称 */
     name: string
     /** 邮箱 */

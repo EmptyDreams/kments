@@ -1,4 +1,5 @@
 import {VercelRequest} from '@vercel/node'
+import * as crypto from 'crypto'
 import {Db, MongoClient} from 'mongodb'
 import Redis from 'ioredis'
 
@@ -22,14 +23,20 @@ export async function connectDatabase(): Promise<Db> {
 }
 
 /** 获取用户 IP 地址 */
-export function getUserIp(request: VercelRequest): string {
-    const list = ['x-forwarded-for', 'x-real-ip', 'x-client-ip']
-    for (let key of list) {
-        const result = request.headers[key]
-        if (result)
-            return Array.isArray(result) ? result[0] : result
+export function getUserIp(request: VercelRequest): string | undefined {
+    const helper = () => {
+        const list = ['x-forwarded-for', 'x-real-ip', 'x-client-ip']
+        for (let key of list) {
+            const result = request.headers[key]
+            console.log(result)
+            if (result)
+                return Array.isArray(result) ? result[0] : result
+        }
+        return request.socket.remoteAddress
     }
-    return request.socket.remoteAddress ?? ''
+    const result = helper()
+    if (result == '127.0.0.1' || result == '::1') return undefined
+    return result
 }
 
 const blackMap = new Map<string, Set<string>>()
@@ -69,4 +76,8 @@ async function ipCount(key: string, ip: string, time: number): Promise<number> {
     const [error, result] = (await multi.exec())![2]
     if (error) throw error
     return result as number
+}
+
+export function calcHash(name: string, content: string): string {
+    return crypto.createHash(name).update(content).digest('hex')
 }
