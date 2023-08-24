@@ -1,14 +1,9 @@
 import {VercelRequest} from '@vercel/node'
 import * as crypto from 'crypto'
 import {Db, MongoClient} from 'mongodb'
-import Redis from 'ioredis'
+import {ipCount} from './RedisOperator'
 
 let db: Db
-const redis = process.env['REDIS_URL'] ? new Redis(process.env['REDIS_URL']!) : new Redis({
-    host: process.env['REDIS_HOST'],
-    port: Number.parseInt(process.env['REDIS_PORT']!),
-    password: process.env['REDIS_PASSWORD']
-})
 
 /** 连接数据库 */
 export async function connectDatabase(): Promise<Db> {
@@ -50,7 +45,8 @@ const blackMap = new Map<string, Set<string>>()
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
 export async function rateLimit(key: string, ip: string | undefined, time: number, limit: number): Promise<[number, number]> {
-    if (!ip) return [400, -1]
+    // if (!ip) return [400, -1]
+    if (!ip) ip = '127.0.0.1'
     let blacked = blackMap.get(key)
     if (blacked?.has(ip)) return [429, -1]
     const count = await ipCount(key, ip, time)
@@ -63,19 +59,6 @@ export async function rateLimit(key: string, ip: string | undefined, time: numbe
         return [429, count]
     }
     return [200, count]
-}
-
-/** 指定 IP 访问计数 */
-async function ipCount(key: string, ip: string, time: number): Promise<number> {
-    const realKey = `${key}:${ip}`
-    const now = Date.now()
-    const multi = redis.multi()
-    multi.zremrangebyscore(realKey, '-inf', now - time)
-        .zadd(realKey, now, now)
-        .zcard(realKey)
-    const [error, result] = (await multi.exec())![2]
-    if (error) throw error
-    return result as number
 }
 
 export function calcHash(name: string, content: string): string {

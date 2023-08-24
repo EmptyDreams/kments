@@ -5,13 +5,15 @@ import {getUserIp, rateLimit} from './utils'
 
 export default async function(request: VercelRequest, response: VercelResponse) {
     const ip = getUserIp(request)
-    // const [limitStatus, count] = await rateLimit(
-    //     'base', ip,
-    //     Number.parseInt(process.env['RATE_LIMIT_TIME']!),
-    //     Number.parseInt(process.env['RATE_LIMIT_COUNT']!)
-    // )
-    // if (limitStatus !== 200)
-    //     return response.status(limitStatus).end()
+    console.log(process.env['RATE_LIMIT_TIME'])
+    const [limitStatus, count] = await rateLimit(
+        'base', ip,
+        Number.parseInt(process.env['RATE_LIMIT_TIME'] ?? '10000'),
+        Number.parseInt(process.env['RATE_LIMIT_COUNT'] ?? '100')
+    )
+    if (limitStatus !== 200)
+        return response.status(limitStatus).end()
+    return response.status(limitStatus).send(count)
     const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'))
     console.log(`${ip}: ${location}`)
     response.status(200).send(location)

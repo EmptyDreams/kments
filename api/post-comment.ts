@@ -1,5 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {findOnVercel} from 'ip-china-location'
+import {ObjectId} from 'mongodb'
 import path from 'path'
 import {calcHash, connectDatabase, getUserIp} from './utils'
 import * as HTMLChecker from 'fast-html-checker'
@@ -58,7 +59,7 @@ function extractInfo(request: VercelRequest, ip: string): CommentBody | string {
             return `${key} 值缺失`
     }
     return {
-        kmId: calcHash('md5', `${json.email}+${json.name}+${Date.now()}`),
+        _id: new ObjectId(new Date().toUTCString() + calcHash('md5', `${json.email}+${json.name}`)),
         name: json.name,
         email: json.email,
         emailMd5: calcHash('md5', json.email),
@@ -92,7 +93,7 @@ function checkComment(body: CommentBody): boolean | string {
 }
 
 interface CommentBody {
-    kmId: string,
+    _id: ObjectId,
     /** 发表用户的名称 */
     name: string
     /** 邮箱 */
