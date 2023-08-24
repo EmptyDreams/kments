@@ -16,8 +16,24 @@ export default function (request: VercelRequest, response: VercelResponse) {
             status: 400,
             msg: info
         })
-    connectDatabase().then(db => {
-        const cursor = db.collection('comments').find({})
+    connectDatabase()
+        .then(db => db.collection('comments')
+            .find({page: info.id})
+            .skip(info.range[0])
+            .limit(info.range[1])
+            .toArray()
+        ).then(list => {
+            response.status(200).json({
+                status: 200,
+                data: list.map(it => ({
+                    name: it.name,
+                    email: it.emailMd5,
+                    link: it.link,
+                    location: it.location,
+                    time: it.time,
+                    content: it.content
+                }))
+            })
     })
 }
 
@@ -29,9 +45,9 @@ function extractInfo(request: VercelRequest): GetInfo | string {
     const start = Number.parseInt(params.get('start') ?? '0')
     const range: [number, number] = [start, -1]
     if (params.has('end'))
-        range[1] = Number.parseInt(params.get('end')!)
+        range[1] = Number.parseInt(params.get('end')!) - start
     else if (params.has('len'))
-        range[1] = range[0] + Number.parseInt(params.get('len')!)
+        range[1] = Number.parseInt(params.get('len')!)
     else return '缺少页码信息'
     return {
         id: decodeURIComponent(params.get('id')!),

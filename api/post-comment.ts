@@ -58,15 +58,16 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Comm
         if (!(key in json))
             return `${key} 值缺失`
     }
+    const date = new Date()
     return {
-        _id: new ObjectId(new Date().toUTCString() + calcHash('md5', `${json.email}+${json.name}`)),
+        _id: new ObjectId(date.toUTCString() + calcHash('md5', `${json.email}+${json.name}`)),
         name: json.name,
         email: json.email,
         emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip, location,
         page: json.page,
-        time: new Date().toUTCString(),
+        time: date.getTime(),
         content: json.content
     }
 }
@@ -111,5 +112,5 @@ interface CommentBody {
     /** 发表页面地址或其它唯一标识符 */
     page: string
     /** 时间 */
-    time: string
+    time: number
 }
