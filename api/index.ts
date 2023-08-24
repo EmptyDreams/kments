@@ -13,10 +13,9 @@ export default async function(request: VercelRequest, response: VercelResponse) 
     )
     if (limitStatus !== 200)
         return response.status(limitStatus).end()
-    return response.status(limitStatus).send(count)
     const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'))
     console.log(`${ip}: ${location}`)
-    response.status(200).send(location)
+    response.status(200).json({location, count})
 
     // switch (request.method) {
     //     case 'GET':
