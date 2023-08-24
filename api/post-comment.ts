@@ -27,7 +27,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
         msg: '禁止海外用户发表评论'
     })
     // 提取评论内容
-    const commentBody = extractInfo(request, ip)
+    const commentBody = extractInfo(request, ip, location)
     if (typeof commentBody === 'string') {
         return response.status(400).json({
             status: 400,
@@ -51,7 +51,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
 }
 
 /** 从请求中提取评论信息 */
-function extractInfo(request: VercelRequest, ip: string): CommentBody | string {
+function extractInfo(request: VercelRequest, ip: string, location: string): CommentBody | string {
     const json = request.body
     const list = ['name', 'email', 'page', 'content', 'link']
     for (let key of list) {
@@ -64,7 +64,7 @@ function extractInfo(request: VercelRequest, ip: string): CommentBody | string {
         email: json.email,
         emailMd5: calcHash('md5', json.email),
         link: json.link,
-        ip,
+        ip, location,
         page: json.page,
         time: new Date().toUTCString(),
         content: json.content
@@ -106,6 +106,8 @@ interface CommentBody {
     content: string
     /** 发表地 IP 地址 */
     ip: string
+    /** 地理位置 */
+    location: string,
     /** 发表页面地址或其它唯一标识符 */
     page: string
     /** 时间 */
