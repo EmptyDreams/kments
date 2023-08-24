@@ -17,11 +17,12 @@ function connectRedis(): Redis {
         if ('REDIS_URL' in process.env)
             return new Redis(process.env['REDIS_URL']!, optional)
         if ('REDIS_HOST' in process.env)
-            return new Redis(Object.assign({
+            return new Redis({
                 host: process.env['REDIS_HOST'],
                 port: Number.parseInt(process.env['REDIS_PORT']!),
                 password: process.env['REDIS_PASSWORD'],
-            }, optional))
+                ...optional
+            })
         throw '没有配置 Redis'
     }
     return redis = helper()
