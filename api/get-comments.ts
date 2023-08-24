@@ -1,5 +1,4 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {ObjectId} from 'mongodb'
 import {connectDatabase} from './utils'
 
 // noinspection JSUnusedGlobalSymbols
