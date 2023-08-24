@@ -45,8 +45,7 @@ const blackMap = new Map<string, Set<string>>()
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
 export async function rateLimit(key: string, ip: string | undefined, time: number, limit: number): Promise<[number, number]> {
-    // if (!ip) return [400, -1]
-    if (!ip) ip = '127.0.0.1'
+    if (!ip) return [400, -1]
     let blacked = blackMap.get(key)
     if (blacked?.has(ip)) return [429, -1]
     const count = await ipCount(key, ip, time)
