@@ -28,8 +28,13 @@ export default function (request: VercelRequest, response: VercelResponse) {
         })
     connectDatabase()
         .then(db => db.collection('comments')
-            .find({page: info.id})
-            .skip(info.start)
+            .find({page: info.id}, {
+                projection: {
+                    page: false,
+                    email: false,
+                    ip: false
+                }
+            }).skip(info.start)
             .limit(info.len)
             .toArray()
         ).then(list => {
