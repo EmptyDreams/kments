@@ -3,9 +3,9 @@ import { findOnVercel} from 'ip-china-location'
 import path from 'path'
 import {getUserIp, rateLimit} from './utils'
 
+// noinspection JSUnusedGlobalSymbols
 export default async function(request: VercelRequest, response: VercelResponse) {
     const ip = getUserIp(request)
-    console.log(process.env['RATE_LIMIT_TIME'])
     const [limitStatus, count] = await rateLimit(
         'base', ip,
         Number.parseInt(process.env['RATE_LIMIT_TIME'] ?? '10000'),
@@ -16,31 +16,4 @@ export default async function(request: VercelRequest, response: VercelResponse) 
     const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'))
     console.log(`${ip}: ${location}`)
     response.status(200).json({location, count})
-
-    // switch (request.method) {
-    //     case 'GET':
-    //         getComment(request, response)
-    //         break
-    //     case 'PUT':
-    //         await postComment(request, response)
-    //         break
-    //     case 'DELETE':
-    //         deleteComment(request, response)
-    //         break
-    //     case 'POST':
-    //
-    //         break
-    //     default:
-    //         response.status(405)
-    //             .end()
-    //         break
-    // }
-}
-
-function deleteComment(request: VercelRequest, response: VercelResponse) {
-
-}
-
-function getComment(request: VercelRequest, response: VercelResponse) {
-
 }
