@@ -1,7 +1,17 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
+import {CommentBody} from './post-comment'
 import {connectDatabase} from './utils'
 
 // noinspection JSUnusedGlobalSymbols
+/**
+ * 获取指定范围内的评论
+ *
+ * 请求参数列表：
+ *
+ * + `id`: 页面唯一标识
+ * + `start`: 起始下标（从零开始，缺省 0）
+ * + `len`: 获取的评论数量（缺省 10）
+ */
 export default function (request: VercelRequest, response: VercelResponse) {
     // 检查请求方法
     if (request.method != 'GET')
@@ -19,20 +29,13 @@ export default function (request: VercelRequest, response: VercelResponse) {
     connectDatabase()
         .then(db => db.collection('comments')
             .find({page: info.id})
-            .skip(info.range[0])
-            .limit(info.range[1])
+            .skip(info.start)
+            .limit(info.len)
             .toArray()
         ).then(list => {
             response.status(200).json({
                 status: 200,
-                data: list.map(it => ({
-                    name: it.name,
-                    email: it.emailMd5,
-                    link: it.link,
-                    location: it.location,
-                    time: it.time,
-                    content: it.content
-                }))
+                data: list.map(it => extractReturnDate(it as CommentBody))
             })
     })
 }
@@ -43,21 +46,30 @@ function extractInfo(request: VercelRequest): GetInfo | string {
     const params = new URLSearchParams(searchString)
     if (!params.has('id')) return '缺少页面唯一标识符'
     const start = Number.parseInt(params.get('start') ?? '0')
-    const range: [number, number] = [start, -1]
-    if (params.has('end'))
-        range[1] = Number.parseInt(params.get('end')!) - start
-    else if (params.has('len'))
-        range[1] = Number.parseInt(params.get('len')!)
-    else return '缺少页码信息'
+    const len = Number.parseInt(params.get('len') ?? '10')
     return {
         id: decodeURIComponent(params.get('id')!),
-        range
+        start, len
+    }
+}
+
+/** 提取返回给客户端的数据 */
+export function extractReturnDate(body: CommentBody): any {
+    return {
+        id: body._id.toString(),
+        name: body.name,
+        email: body.emailMd5,
+        link: body.link,
+        location: body.location,
+        content: body.content
     }
 }
 
 interface GetInfo {
     /** 评论页的唯一标识符 */
     id: string,
-    /** 评论获取的范围 */
-    range: [number, number]
+    /** 起始下标 */
+    start: number,
+    /** 长度 */
+    len: number
 }

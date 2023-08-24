@@ -2,6 +2,7 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import {findOnVercel} from 'ip-china-location'
 import {ObjectId} from 'mongodb'
 import path from 'path'
+import {extractReturnDate} from './get-comments'
 import {calcHash, connectDatabase, getUserIp} from './utils'
 import * as HTMLChecker from 'fast-html-checker'
 
@@ -46,7 +47,8 @@ export default function (request: VercelRequest, response: VercelResponse) {
     connectDatabase()
         .then(db => db.collection('comments').insertOne(commentBody))
         .then(() => response.status(200).json({
-            status: 200
+            status: 200,
+            data: extractReturnDate(commentBody)
         }))
 }
 
@@ -58,16 +60,14 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Comm
         if (!(key in json))
             return `${key} 值缺失`
     }
-    const date = new Date()
     return {
-        _id: new ObjectId(date.toUTCString() + calcHash('md5', `${json.email}+${json.name}`)),
+        _id: new ObjectId(),
         name: json.name,
         email: json.email,
         emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip, location,
         page: json.page,
-        time: date.getTime(),
         content: json.content
     }
 }
@@ -93,7 +93,7 @@ function checkComment(body: CommentBody): boolean | string {
     return true
 }
 
-interface CommentBody {
+export interface CommentBody {
     _id: ObjectId,
     /** 发表用户的名称 */
     name: string
@@ -111,6 +111,4 @@ interface CommentBody {
     location: string,
     /** 发表页面地址或其它唯一标识符 */
     page: string
-    /** 时间 */
-    time: number
 }
