@@ -17,5 +17,9 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {"source": "/get-comments(\/?)?:path*", "destination": "/api/get-comments/?:path*"},
+    {"source": "/post-comment(\/?):path*", "destination": "/api/post-comment/"}
   ]
 }
