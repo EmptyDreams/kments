@@ -27,10 +27,11 @@ export default function (request: VercelRequest, response: VercelResponse) {
             msg: info
         })
     connectDatabase()
-        .then(db => db.collection('comments')
-            .find({page: info.id}, {
+        .then(db => db.collection(info.id)
+            .find({
+                parent: { $exists: false }
+            }, {
                 projection: {
-                    page: false,
                     email: false,
                     ip: false
                 }
@@ -53,7 +54,7 @@ function extractInfo(request: VercelRequest): GetInfo | string {
     const start = Number.parseInt(params.get('start') ?? '0')
     const len = Number.parseInt(params.get('len') ?? '10')
     return {
-        id: decodeURIComponent(params.get('id')!),
+        id: `c-${params.get('id')}`,
         start, len
     }
 }
@@ -66,7 +67,8 @@ export function extractReturnDate(body: MainCommentBody): any {
         email: body.emailMd5,
         link: body.link,
         location: body.location,
-        content: body.content
+        content: body.content,
+        subCount: body.subCount ?? 0
     }
 }
 

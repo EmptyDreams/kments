@@ -43,9 +43,11 @@ export default function (request: VercelRequest, response: VercelResponse) {
             message: checkResult
         })
     }
+    const collectionName = commentBody.page!
+    delete commentBody['page']
     // 发表评论
     connectDatabase()
-        .then(db => db.collection('comments').insertOne(commentBody))
+        .then(db => db.collection(collectionName).insertOne(commentBody))
         .then(() => response.status(200).json({
             status: 200,
             data: extractReturnDate(commentBody)
@@ -67,7 +69,7 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
         emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip, location,
-        page: json.page,
+        page: `c-${json.page}`,
         content: json.content
     }
 }
@@ -77,6 +79,11 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
  * @return {boolean|string} 返回 true 表示可以，否则表示不可以
  */
 function checkComment(body: MainCommentBody): boolean | string {
+    const banChars = ['.', '*']
+    if (banChars.find(it => body.page!.includes(it)))
+        return '页面 ID 不能包含英文句号和星号'
+    if (body.page!.length > 64)
+        return '页面 ID 长度过长'
     const env = process.env
     const blocked = {
         user: env['USER_BLOCKED'] ? JSON.parse(env['USER_BLOCKED']) : ['免费', '节点', 'clash', 'v2ray', '机场'],
@@ -110,6 +117,8 @@ export interface MainCommentBody {
     ip: string
     /** 地理位置 */
     location: string,
+    /** 子评论的数量 */
+    subCount?: number,
     /** 发表页面地址或其它唯一标识符 */
-    page: string
+    page?: string
 }
