@@ -4,7 +4,7 @@ import {findOnVercel} from 'ip-china-location'
 import {Collection, ObjectId, Document} from 'mongodb'
 import path from 'path'
 import {extractReturnDate} from './get-comments'
-import {calcHash, connectDatabase, getUserIp} from './utils'
+import {calcHash, connectDatabase, getUserIp} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -30,13 +30,13 @@ export default async function (request: VercelRequest, response: VercelResponse)
             msg: '仅支持 POST 访问'
         })
     // 提取和检查 IP
-    const ip = getUserIp(request)
+    const ip = getUserIp(request) ?? '::1'
     if (!ip) return response.status(200).json({
         status: 400,
         msg: '请求缺少 IP 信息'
     })
     // 提取和检查用户地址
-    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
+    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip) ?? '中国'
     if (!location) return response.status(200).json({
         status: 403,
         msg: '禁止海外用户发表评论'
@@ -168,5 +168,5 @@ export interface MainCommentBody extends Document {
     /** 要 at 的评论 */
     at?: string[],
     /** 子评论列表 */
-    readonly children?: string[]
+    children?: string[]
 }

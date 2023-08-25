@@ -20,6 +20,11 @@
   ],
   "rewrites": [
     {"source": "/get-comments(\/?)?:path*", "destination": "/api/get-comments/?:path*"},
-    {"source": "/post-comment(\/?):path*", "destination": "/api/post-comment/"}
+    {"source": "/post-comment(\/?)", "destination": "/api/post-comment/"},
+    {"source": "(\/$)", "destination": "/api/index/"}
+  ],
+  "redirects": [
+    {"source": "/private/:path*", "destination": "/api/private/", "permanent": true},
+    {"source": "/api/utils/(.*)", "destination": "/api/private/", "permanent": true}
   ]
 }

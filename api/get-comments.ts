@@ -1,6 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {MainCommentBody} from './post-comment'
-import {connectDatabase} from './utils'
+import {connectDatabase} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

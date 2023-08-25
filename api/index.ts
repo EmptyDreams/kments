@@ -1,8 +1,7 @@
 import {VercelRequest, VercelResponse} from "@vercel/node"
 import { findOnVercel} from 'ip-china-location'
-import {ObjectId} from 'mongodb'
 import path from 'path'
-import {getUserIp, rateLimit} from './utils'
+import {getUserIp, rateLimit} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 export default async function(request: VercelRequest, response: VercelResponse) {
