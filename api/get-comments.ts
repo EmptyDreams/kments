@@ -1,5 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {CommentBody} from './post-comment'
+import {MainCommentBody} from './post-comment'
 import {connectDatabase} from './utils'
 
 // noinspection JSUnusedGlobalSymbols
@@ -40,7 +40,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
         ).then(list => {
             response.status(200).json({
                 status: 200,
-                data: list.map(it => extractReturnDate(it as CommentBody))
+                data: list.map(it => extractReturnDate(it as MainCommentBody))
             })
     })
 }
@@ -59,7 +59,7 @@ function extractInfo(request: VercelRequest): GetInfo | string {
 }
 
 /** 提取返回给客户端的数据 */
-export function extractReturnDate(body: CommentBody): any {
+export function extractReturnDate(body: MainCommentBody): any {
     return {
         id: body._id.toString(),
         name: body.name,

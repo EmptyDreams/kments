@@ -53,7 +53,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
 }
 
 /** 从请求中提取评论信息 */
-function extractInfo(request: VercelRequest, ip: string, location: string): CommentBody | string {
+function extractInfo(request: VercelRequest, ip: string, location: string): MainCommentBody | string {
     const json = request.body
     const list = ['name', 'email', 'page', 'content', 'link']
     for (let key of list) {
@@ -76,7 +76,7 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Comm
  * 检查评论是否可以发布
  * @return {boolean|string} 返回 true 表示可以，否则表示不可以
  */
-function checkComment(body: CommentBody): boolean | string {
+function checkComment(body: MainCommentBody): boolean | string {
     const env = process.env
     const blocked = {
         user: env['USER_BLOCKED'] ? JSON.parse(env['USER_BLOCKED']) : ['免费', '节点', 'clash', 'v2ray', '机场'],
@@ -93,7 +93,8 @@ function checkComment(body: CommentBody): boolean | string {
     return true
 }
 
-export interface CommentBody {
+/** 楼主评论 body */
+export interface MainCommentBody {
     _id: ObjectId,
     /** 发表用户的名称 */
     name: string
