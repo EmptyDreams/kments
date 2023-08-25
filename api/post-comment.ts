@@ -30,13 +30,13 @@ export default async function (request: VercelRequest, response: VercelResponse)
             msg: '仅支持 POST 访问'
         })
     // 提取和检查 IP
-    const ip = getUserIp(request) ?? '::1'
+    const ip = getUserIp(request)
     if (!ip) return response.status(200).json({
         status: 400,
         msg: '请求缺少 IP 信息'
     })
     // 提取和检查用户地址
-    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip) ?? '中国'
+    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
     if (!location) return response.status(200).json({
         status: 403,
         msg: '禁止海外用户发表评论'
