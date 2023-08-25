@@ -23,7 +23,6 @@ export function getUserIp(request: VercelRequest): string | undefined {
         const list = ['x-forwarded-for', 'x-real-ip', 'x-client-ip']
         for (let key of list) {
             const result = request.headers[key]
-            console.log(result)
             if (result)
                 return Array.isArray(result) ? result[0] : result
         }
