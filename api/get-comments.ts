@@ -6,6 +6,8 @@ import {connectDatabase} from './utils'
 /**
  * 获取指定范围内的评论
  *
+ * 请求方法：GET
+ *
  * 请求参数列表：
  *
  * + `id`: 页面唯一标识

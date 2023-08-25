@@ -7,7 +7,19 @@ import {calcHash, connectDatabase, getUserIp} from './utils'
 import * as HTMLChecker from 'fast-html-checker'
 
 // noinspection JSUnusedGlobalSymbols
-/** 发布一个评论 */
+/**
+ * 发布一个评论
+ *
+ * 请求方法：POST (with json)
+ *
+ * body 键值说明：
+ *
+ * + id: string - 当前页面的唯一标识符（不能包含英文逗号和星号）
+ * + name: string - 发布人昵称
+ * + email: string - 发布人邮箱
+ * + link: string - 发布人的主页（可选）
+ * + content: string - 评论内容（HTML）
+ */
 export default function (request: VercelRequest, response: VercelResponse) {
     // 检查访问方法
     if (request.method !== 'POST')
@@ -57,7 +69,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
 /** 从请求中提取评论信息 */
 function extractInfo(request: VercelRequest, ip: string, location: string): MainCommentBody | string {
     const json = request.body
-    const list = ['name', 'email', 'page', 'content', 'link']
+    const list = ['name', 'email', 'id', 'content']
     for (let key of list) {
         if (!(key in json))
             return `${key} 值缺失`
@@ -69,7 +81,7 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
         emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip, location,
-        page: `c-${json.page}`,
+        page: `c-${json.id}`,
         content: json.content
     }
 }
