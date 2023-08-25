@@ -14,7 +14,7 @@ import * as HTMLChecker from 'fast-html-checker'
  *
  * body 键值说明：
  *
- * + id: string - 当前页面的唯一标识符（不能包含英文逗号和星号）
+ * + pageId: string - 当前页面的唯一标识符（不能包含英文逗号和星号）
  * + name: string - 发布人昵称
  * + email: string - 发布人邮箱
  * + link: string - 发布人的主页（可选）
@@ -69,7 +69,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
 /** 从请求中提取评论信息 */
 function extractInfo(request: VercelRequest, ip: string, location: string): MainCommentBody | string {
     const json = request.body
-    const list = ['name', 'email', 'id', 'content']
+    const list = ['name', 'email', 'pageId', 'content']
     for (let key of list) {
         if (!(key in json))
             return `${key} 值缺失`
@@ -81,7 +81,7 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
         emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip, location,
-        page: `c-${json.id}`,
+        page: `c-${json['pageId']}`,
         content: json.content
     }
 }
