@@ -31,7 +31,7 @@ export default function (request: VercelRequest, response: VercelResponse) {
     connectDatabase()
         .then(db => db.collection(info.id)
             .find({
-                parent: { $exists: false }
+                reply: { $exists: false }
             }, {
                 projection: {
                     email: false,
