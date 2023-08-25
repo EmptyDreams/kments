@@ -1,10 +1,10 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
+import * as HTMLChecker from 'fast-html-checker'
 import {findOnVercel} from 'ip-china-location'
-import {ObjectId} from 'mongodb'
+import {Collection, ObjectId, Document} from 'mongodb'
 import path from 'path'
 import {extractReturnDate} from './get-comments'
 import {calcHash, connectDatabase, getUserIp} from './utils'
-import * as HTMLChecker from 'fast-html-checker'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -19,8 +19,10 @@ import * as HTMLChecker from 'fast-html-checker'
  * + email: string - 发布人邮箱
  * + link: string - 发布人的主页（可选）
  * + content: string - 评论内容（HTML）
+ * + reply: string - 要回复的评论的 ID（可选）
+ * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
  */
-export default function (request: VercelRequest, response: VercelResponse) {
+export default async function (request: VercelRequest, response: VercelResponse) {
     // 检查访问方法
     if (request.method !== 'POST')
         return response.status(200).json({
@@ -57,13 +59,36 @@ export default function (request: VercelRequest, response: VercelResponse) {
     }
     const collectionName = commentBody.page!
     delete commentBody['page']
-    // 发表评论
-    connectDatabase()
-        .then(db => db.collection(collectionName).insertOne(commentBody))
-        .then(() => response.status(200).json({
+    const collection = (await connectDatabase()).collection<MainCommentBody>(collectionName)
+    Promise.all([
+        collection.insertOne(commentBody),
+        reply(collection, commentBody)
+    ]).then(() => {
+        response.status(200).json({
             status: 200,
             data: extractReturnDate(commentBody)
-        }))
+        })
+    })
+}
+
+/** 回复评论 */
+async function reply(collection: Collection<MainCommentBody>, body: MainCommentBody) {
+    let {reply, at} = body
+    if (!reply) return
+    await Promise.all([
+        collection.updateOne({
+            _id: new ObjectId(reply)
+        }, {
+            $inc: { subCount: 1},
+            $push: { children: reply }
+        }),
+        at ? collection.updateMany({
+            _id: {$in: at.map(it => new ObjectId(it))}
+        }, {
+            // @ts-ignore
+            $push: { children: reply }
+        }) : Promise.resolve()
+    ])
 }
 
 /** 从请求中提取评论信息 */
@@ -74,7 +99,7 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
         if (!(key in json))
             return `${key} 值缺失`
     }
-    return {
+    const result: MainCommentBody = {
         _id: new ObjectId(),
         name: json.name,
         email: json.email,
@@ -84,6 +109,11 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
         page: `c-${json['pageId']}`,
         content: json.content
     }
+    if ('reply' in json)
+        result.reply = json.reply
+    if ('at' in json)
+        result.at = json.at
+    return result
 }
 
 /**
@@ -113,24 +143,30 @@ function checkComment(body: MainCommentBody): boolean | string {
 }
 
 /** 楼主评论 body */
-export interface MainCommentBody {
+export interface MainCommentBody extends Document {
     _id: ObjectId,
     /** 发表用户的名称 */
-    name: string
+    name: string,
     /** 邮箱 */
-    email: string
+    email: string,
     /** 邮箱 md5 值 */
-    emailMd5: string
+    emailMd5: string,
     /** 用户主页 */
-    link: string
+    link: string,
     /** 评论内容 */
-    content: string
+    content: string,
     /** 发表地 IP 地址 */
-    ip: string
+    ip: string,
     /** 地理位置 */
     location: string,
     /** 子评论的数量 */
     subCount?: number,
     /** 发表页面地址或其它唯一标识符 */
-    page?: string
+    page?: string,
+    /** 要回复的评论 */
+    reply?: string,
+    /** 要 at 的评论 */
+    at?: string[],
+    /** 子评论列表 */
+    readonly children?: string[]
 }
