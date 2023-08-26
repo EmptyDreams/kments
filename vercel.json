@@ -20,7 +20,8 @@
   ],
   "rewrites": [
     {"source": "/get-comments(\/?)?:path*", "destination": "/api/get-comments/?:path*"},
-    {"source": "/post-comment(\/?)", "destination": "/api/post-comment/"},
+    {"source": "/post-comment/", "destination": "/api/post-comment/"},
+    {"source": "/get-recent-comments/", "destination": "/api/get-recent-comments/"},
     {"source": "(\/$)", "destination": "/api/index/"}
   ],
   "redirects": [

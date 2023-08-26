@@ -5,7 +5,7 @@ import {Collection, ObjectId, Document} from 'mongodb'
 import path from 'path'
 import {extractReturnDate} from './get-comments'
 import {connectRedis} from './utils/RedisOperator'
-import {calcHash, connectDatabase, getUserIp} from './utils/utils'
+import {calcHash, connectDatabase, getUserIp, rateLimit} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -31,13 +31,12 @@ export default async function (request: VercelRequest, response: VercelResponse)
             msg: '仅支持 POST 访问'
         })
     // 提取和检查 IP
-    const ip = getUserIp(request)
-    if (!ip) return response.status(200).json({
-        status: 400,
-        msg: '请求缺少 IP 信息'
-    })
+    const ip = getUserIp(request) ?? '::1'
+    const [status] = await rateLimit('base', ip)
+    if (status !== 200)
+        return response.status(status).end()
     // 提取和检查用户地址
-    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
+    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip) ?? '中国'
     if (!location) return response.status(200).json({
         status: 403,
         msg: '禁止海外用户发表评论'
@@ -64,7 +63,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     Promise.all([
         collection.insertOne(commentBody),
         reply(collection, commentBody),
-        pushNewComment(collectionName, commentBody)
+        pushNewCommentToRedis(collectionName, commentBody)
     ]).then(() => {
         response.status(200).json({
             status: 200,
@@ -74,17 +73,15 @@ export default async function (request: VercelRequest, response: VercelResponse)
 }
 
 /** 推送一个新的评论记录到 redis */
-async function pushNewComment(pageId: string, body: MainCommentBody) {
+async function pushNewCommentToRedis(pageId: string, body: MainCommentBody) {
     if ('reply' in body) return
     const id = body._id
     const key = 'recentComments'
     const date = id.getTimestamp().getTime()
-    const pipeline = connectRedis().pipeline()
-    const [err, count] = (await pipeline
+    await connectRedis().pipeline()
         .zadd(key, date, `${id.toHexString()}:${pageId}`)
         .zpopmin(key)
-        .exec())![1]
-    if (err) throw err
+        .exec()
 }
 
 /** 回复评论 */
@@ -149,7 +146,7 @@ function checkComment(body: MainCommentBody): boolean | string {
     }
     if (blocked.user.find((keyword: string) => body.name.includes(keyword)))
         return '用户名称包含违规内容'
-    if (blocked.link.test(body.link))
+    if (body.link && blocked.link.test(body.link))
         return '用户主页已被屏蔽'
     if (HTMLChecker.check(body.content, {
             allowTags: ['a', 'strong']
@@ -168,7 +165,7 @@ export interface MainCommentBody extends Document {
     /** 邮箱 md5 值 */
     emailMd5: string,
     /** 用户主页 */
-    link: string,
+    link?: string,
     /** 评论内容 */
     content: string,
     /** 发表地 IP 地址 */

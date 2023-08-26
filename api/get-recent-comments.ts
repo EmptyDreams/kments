@@ -24,9 +24,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const info = extractInfo(request)
     const list = await connectRedis().zrevrangebyscore(
         'recentComments',
-        '+inf', 11,
+        '+inf', 10,
         'LIMIT', 0, info.limit - 1
     )
+    console.log(list)
     if (!list || list.length == 0)
         return response.status(200).json({
             status: 200,

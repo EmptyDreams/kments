@@ -6,11 +6,7 @@ import {getUserIp, rateLimit} from './utils/utils'
 // noinspection JSUnusedGlobalSymbols
 export default async function(request: VercelRequest, response: VercelResponse) {
     const ip = getUserIp(request)
-    const [limitStatus, count] = await rateLimit(
-        'base', ip,
-        Number.parseInt(process.env['RATE_LIMIT_TIME'] ?? '10000'),
-        Number.parseInt(process.env['RATE_LIMIT_COUNT'] ?? '100')
-    )
+    const [limitStatus, count] = await rateLimit('base', ip)
     if (limitStatus !== 200)
         return response.status(limitStatus).end()
     const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'))

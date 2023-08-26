@@ -43,10 +43,12 @@ const blackMap = new Map<string, Set<string>>()
  * @param limit 次数限制
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
-export async function rateLimit(key: string, ip: string | undefined, time: number, limit: number): Promise<[number, number]> {
+export async function rateLimit(key: string, ip: string | undefined): Promise<[number, number]> {
     if (!ip) return [400, -1]
     let blacked = blackMap.get(key)
     if (blacked?.has(ip)) return [429, -1]
+    const time = Number.parseInt(process.env['RATE_LIMIT_TIME'] ?? '10000')
+    const limit = Number.parseInt(process.env['RATE_LIMIT_COUNT'] ?? '100')
     const count = await ipCount(key, ip, time)
     if (count > limit) {
         if (!blacked) {
