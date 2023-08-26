@@ -4,7 +4,7 @@ import {findOnVercel} from 'ip-china-location'
 import {Collection, ObjectId, Document} from 'mongodb'
 import path from 'path'
 import {extractReturnDate} from './get-comments'
-import {pushNewComment} from './utils/RedisOperator'
+import {connectRedis} from './utils/RedisOperator'
 import {calcHash, connectDatabase, getUserIp} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
@@ -64,13 +64,27 @@ export default async function (request: VercelRequest, response: VercelResponse)
     Promise.all([
         collection.insertOne(commentBody),
         reply(collection, commentBody),
-        'reply' in commentBody ? Promise.resolve() : pushNewComment(commentBody._id, collectionName)
+        pushNewComment(collectionName, commentBody)
     ]).then(() => {
         response.status(200).json({
             status: 200,
             data: extractReturnDate(commentBody)
         })
     })
+}
+
+/** 推送一个新的评论记录到 redis */
+async function pushNewComment(pageId: string, body: MainCommentBody) {
+    if ('reply' in body) return
+    const id = body._id
+    const key = 'recentComments'
+    const date = id.getTimestamp().getTime()
+    const pipeline = connectRedis().pipeline()
+    const [err, count] = (await pipeline
+        .zadd(key, date, `${id.toHexString()}:${pageId}`)
+        .zpopmin(key)
+        .exec())![1]
+    if (err) throw err
 }
 
 /** 回复评论 */

@@ -1,4 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
+import {Collection, Document, Filter} from 'mongodb'
 import {MainCommentBody} from './post-comment'
 import {connectDatabase} from './utils/utils'
 
@@ -29,22 +30,16 @@ export default function (request: VercelRequest, response: VercelResponse) {
             msg: info
         })
     connectDatabase()
-        .then(db => db.collection(info.id)
-            .find({
-                reply: { $exists: false }
-            }, {
-                projection: {
-                    email: false,
-                    ip: false
-                }
-            }).skip(info.start)
-            .limit(info.len)
-            .toArray()
+        .then(db => readCommentsFromDb(
+                db.collection(info.id), {reply: {$exists: false}}
+            ).skip(info.start)
+                .limit(info.len)
+                .toArray()
         ).then(list => {
-            response.status(200).json({
-                status: 200,
-                data: list.map(it => extractReturnDate(it as MainCommentBody))
-            })
+        response.status(200).json({
+            status: 200,
+            data: list.map(it => extractReturnDate(it as MainCommentBody))
+        })
     })
 }
 
@@ -59,6 +54,16 @@ function extractInfo(request: VercelRequest): GetInfo | string {
         id: `c-${params.get('id')}`,
         start, len
     }
+}
+
+export function readCommentsFromDb(collection: Collection, filter: Filter<Document>) {
+    return collection.find(filter, {
+        projection: {
+            email: false,
+            ip: false,
+            children: false
+        }
+    })
 }
 
 /** 提取返回给客户端的数据 */
