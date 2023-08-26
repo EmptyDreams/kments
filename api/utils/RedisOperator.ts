@@ -1,4 +1,6 @@
+import exp from 'constants'
 import Redis, {RedisOptions} from 'ioredis'
+import {ObjectId} from 'mongodb'
 
 let redis: Redis
 
@@ -40,9 +42,36 @@ export async function ipCount(key: string, ip: string, time: number): Promise<nu
     const pipeline = connectRedis().pipeline()
     pipeline.zremrangebyscore(realKey, '-inf', now - time)
         .zadd(realKey, now, now)
+        .zcard('recentComments')
         .zcard(realKey)
-    const list = await pipeline.exec()
-    const [err, result] = list![pipeline.length - 1]
+    const list = (await pipeline.exec())!
+    let err, result
+    [err, result] = list[pipeline.length - 2]
+    if (err) throw err
+    if ((result as number) < 10) {
+        const pipeline = connectRedis().pipeline()
+        for (let i = result as number; i < 10; ++i) {
+            pipeline.zadd('recentComments', i, i.toString())
+        }
+        await pipeline.exec()
+    }
+    [err, result] = list[pipeline.length - 1]
     if (err) throw err
     return result as number
+}
+
+/**
+ * 推送一个新的评论记录到 redis
+ * @param id 评论 ID
+ * @param pageId 唯一标识符
+ */
+export async function pushNewComment(id: ObjectId, pageId: string) {
+    const key = 'recentComments'
+    const date = id.getTimestamp().getTime()
+    const pipeline = connectRedis().pipeline()
+    const [err, count] = (await pipeline
+        .zadd(key, date, `${id.toHexString().substring(8)}:${pageId}`)
+        .zpopmin(key)
+        .exec())![1]
+    if (err) throw err
 }

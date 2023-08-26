@@ -4,6 +4,7 @@ import {findOnVercel} from 'ip-china-location'
 import {Collection, ObjectId, Document} from 'mongodb'
 import path from 'path'
 import {extractReturnDate} from './get-comments'
+import {pushNewComment} from './utils/RedisOperator'
 import {calcHash, connectDatabase, getUserIp} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
@@ -62,7 +63,8 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const collection = (await connectDatabase()).collection<MainCommentBody>(collectionName)
     Promise.all([
         collection.insertOne(commentBody),
-        reply(collection, commentBody)
+        reply(collection, commentBody),
+        'reply' in commentBody ? Promise.resolve() : pushNewComment(commentBody._id, collectionName)
     ]).then(() => {
         response.status(200).json({
             status: 200,
