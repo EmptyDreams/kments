@@ -3,7 +3,7 @@ import {Document, ObjectId, WithId} from 'mongodb'
 import {extractReturnDate, readCommentsFromDb} from './get-comments'
 import {MainCommentBody} from './post-comment'
 import {connectRedis} from './utils/RedisOperator'
-import {connectDatabase} from './utils/utils'
+import {checkRequest, connectDatabase} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -16,11 +16,8 @@ import {connectDatabase} from './utils/utils'
  * + limit - 数量限制（最大为 10，缺省 5）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    if (request.method != 'GET')
-        return response.status(200).json({
-            status: 405,
-            msg: '仅支持 GET 访问'
-        })
+    const checkResult = await checkRequest(request, {allows: 'all'}, 'GET')
+    if (checkResult.status != 200) return response.status(checkResult.status).send(checkResult.msg)
     const info = extractInfo(request)
     const list = await connectRedis().zrevrangebyscore(
         'recentComments',

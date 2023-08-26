@@ -1,6 +1,8 @@
 import {VercelRequest} from '@vercel/node'
 import * as crypto from 'crypto'
+import {findOnVercel} from 'ip-china-location'
 import {Collection, Db, Document, MongoClient, ObjectId, WithId} from 'mongodb'
+import path from 'path'
 import {connectRedis, ipCount} from './RedisOperator'
 
 let db: Db
@@ -41,8 +43,7 @@ const blackMap = new Map<string, Set<string>>()
  * @param ip IP
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
-export async function rateLimit(key: string, ip: string | undefined): Promise<[number, number]> {
-    if (!ip) return [400, -1]
+export async function rateLimit(key: string, ip: string): Promise<[number, number]> {
     let blacked = blackMap.get(key)
     if (blacked?.has(ip)) return [429, -1]
     const time = Number.parseInt(process.env['RATE_LIMIT_TIME'] ?? '10000')
@@ -59,8 +60,54 @@ export async function rateLimit(key: string, ip: string | undefined): Promise<[n
     return [200, count]
 }
 
+/** 计算指定字符串的哈希值 */
 export function calcHash(name: string, content: string): string {
     return crypto.createHash(name).update(content).digest('hex')
+}
+
+export interface RegionLimit {
+    /** 访问区域限制方法（中国大陆、中国、无限制） */
+    allows: 'main' | 'china' | 'all',
+    /** 是否允许未知地域的访问 */
+    allow_unknown?: boolean
+}
+
+/** 对请求进行合法性检查 */
+export async function checkRequest(request: VercelRequest, regionLimit: RegionLimit, ...allowMethods: string[]) {
+    if (!allowMethods.includes(request.method!)) return {
+        status: 405,
+        msg: `仅支持 ${allowMethods} 访问`
+    }
+    const ip = getUserIp(request)
+    if (!ip) return {
+        status: 400,
+        msg: `缺失 IP 值`
+    }
+    let location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
+    if (!location && !regionLimit.allow_unknown) return {
+        status: 403,
+        msg: '定位失败，禁止未知区域的用户访问'
+    }
+    switch (regionLimit.allows) {
+        case "main":
+            if (!location || ['澳门', '香港', '台湾'].includes(location)) return {
+                status: 403,
+                msg: `仅允许大陆用户访问`
+            }
+            break
+        case "china":
+            if (!location) return {
+                status: 403,
+                msg: '禁止国外用户访问'
+            }
+            break
+    }
+    if (!location) location = '国外'
+    const [status, count] = await rateLimit('base', ip)
+    if (status != 200) return {status}
+    return {
+        status, location, count, ip
+    }
 }
 
 /** 重建最近评论索引表 */

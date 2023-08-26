@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
 import {MainCommentBody} from './post-comment'
-import {connectDatabase} from './utils/utils'
+import {checkRequest, connectDatabase} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -15,13 +15,9 @@ import {connectDatabase} from './utils/utils'
  * + `start`: 起始下标（从零开始，缺省 0）
  * + `len`: 获取的评论数量（缺省 10）
  */
-export default function (request: VercelRequest, response: VercelResponse) {
-    // 检查请求方法
-    if (request.method != 'GET')
-        return response.status(200).json({
-            status: 405,
-            msg: '仅支持 GET 访问'
-        })
+export default async function (request: VercelRequest, response: VercelResponse) {
+    const checkResult = await checkRequest(request, {allows: 'all'}, 'GET')
+    if (checkResult.status != 200) return response.status(checkResult.status).send(checkResult.msg)
     // 提取和检查请求参数信息
     const info = extractInfo(request)
     if (typeof info == 'string')
@@ -29,17 +25,13 @@ export default function (request: VercelRequest, response: VercelResponse) {
             status: 400,
             msg: info
         })
-    connectDatabase()
-        .then(db => readCommentsFromDb(
-                db.collection(info.id), {reply: {$exists: false}}
-            ).skip(info.start)
-                .limit(info.len)
-                .toArray()
-        ).then(list => {
-        response.status(200).json({
-            status: 200,
-            data: list.map(it => extractReturnDate(it as MainCommentBody))
-        })
+    const db = await connectDatabase()
+    const list = await readCommentsFromDb(
+        db.collection(info.id), {reply: {$exists: false}}
+    ).skip(info.start).limit(info.len).toArray()
+    response.status(200).json({
+        status: 200,
+        data: list.map(it => extractReturnDate(it as MainCommentBody))
     })
 }
 

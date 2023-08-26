@@ -1,11 +1,9 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import * as HTMLChecker from 'fast-html-checker'
-import {findOnVercel} from 'ip-china-location'
 import {Collection, ObjectId, Document} from 'mongodb'
-import path from 'path'
 import {extractReturnDate} from './get-comments'
 import {connectRedis} from './utils/RedisOperator'
-import {calcHash, connectDatabase, getUserIp, rateLimit} from './utils/utils'
+import {calcHash, checkRequest, connectDatabase} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -24,25 +22,11 @@ import {calcHash, connectDatabase, getUserIp, rateLimit} from './utils/utils'
  * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    // 检查访问方法
-    if (request.method !== 'POST')
-        return response.status(200).json({
-            status: 405,
-            msg: '仅支持 POST 访问'
-        })
-    // 提取和检查 IP
-    const ip = getUserIp(request) ?? '::1'
-    const [status] = await rateLimit('base', ip)
-    if (status !== 200)
-        return response.status(status).end()
-    // 提取和检查用户地址
-    const location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip) ?? '中国'
-    if (!location) return response.status(200).json({
-        status: 403,
-        msg: '禁止海外用户发表评论'
-    })
+    const checkResult = await checkRequest(request, {allows: 'china'}, 'POST')
+    if (checkResult.status != 200) return response.status(checkResult.status).send(checkResult.msg)
+    const {ip, location} = checkResult
     // 提取评论内容
-    const commentBody = extractInfo(request, ip, location)
+    const commentBody = extractInfo(request, ip!, location!)
     if (typeof commentBody === 'string') {
         return response.status(400).json({
             status: 400,
@@ -50,11 +34,11 @@ export default async function (request: VercelRequest, response: VercelResponse)
         })
     }
     // 检查是否允许发布
-    const checkResult = checkComment(commentBody)
-    if (typeof checkResult === 'string') {
+    const commentChecked = checkComment(commentBody)
+    if (typeof commentChecked === 'string') {
         return response.status(200).json({
             status: 403,
-            message: checkResult
+            message: commentChecked
         })
     }
     const collectionName = commentBody.page!
