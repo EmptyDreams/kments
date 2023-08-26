@@ -1,7 +1,7 @@
 import {VercelRequest} from '@vercel/node'
 import * as crypto from 'crypto'
-import {Db, MongoClient} from 'mongodb'
-import {ipCount} from './RedisOperator'
+import {Collection, Db, Document, MongoClient, ObjectId, WithId} from 'mongodb'
+import {connectRedis, ipCount} from './RedisOperator'
 
 let db: Db
 
@@ -61,4 +61,66 @@ export async function rateLimit(key: string, ip: string | undefined): Promise<[n
 
 export function calcHash(name: string, content: string): string {
     return crypto.createHash(name).update(content).digest('hex')
+}
+
+/** 重建最近评论索引表 */
+export async function rebuildRecentComments(cache: boolean) {
+    type Element = {id: ObjectId, pageId: string}
+    const list: Element[] = []
+    if (cache) {
+        const oldData = await connectRedis().zrangebyscore('recentComments', '+inf', 10)
+        list.push(
+            ...oldData.map(it => {
+                const data = it.split(':', 2)
+                return {
+                    id: new ObjectId(data[0]),
+                    pageId: data[1]
+                }
+            })
+        )
+    }
+    const db = await connectDatabase()
+    const collections = (await db.collections()).filter(it => it.collectionName.startsWith('c-'))
+    function insertElement(ele: Element) {
+        let index = list.findIndex(it => it.id.getTimestamp().getTime() > ele.id.getTimestamp().getTime())
+        if (index == -1) index = list.length
+        list.splice(index, 0, ele)
+        if (list.length > 10)
+            list.pop()
+    }
+    async function findAll(collection: Collection): Promise<Element[]> {
+        const array = await collection.find({
+            reply: {$exists: false},
+            _id: {$lt: list[list.length - 1].id}
+        }, {
+            projection: {_id: true}
+        }).limit(10)
+            .toArray()
+        return array.map(it => ({id: it._id, pageId: collection.collectionName}))
+    }
+    async function sequence() {
+        for (let collection of collections) {
+            const array = await findAll(collection)
+            for (let item of array) {
+                insertElement(item)
+            }
+        }
+    }
+    async function parallel() {
+        await Promise.all(
+            collections.map(
+                collection => findAll(collection)
+                    .then(array => array.forEach(it => insertElement(it)))
+            )
+        )
+    }
+    // 数量小于阈值时串行执行，否则并行执行
+    if (collections.length < 25) await sequence()
+    else await parallel()
+    await connectRedis().pipeline()
+        .zremrangebyscore('recentComments', '-inf', '+inf')
+        .zadd(
+            'recentComments',
+            ...list.flatMap(it => [it.id.getTimestamp().getTime(), `${it.id}:${it.pageId}`])
+        ).exec()
 }

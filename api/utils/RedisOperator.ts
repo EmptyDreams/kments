@@ -1,4 +1,5 @@
 import Redis, {RedisOptions} from 'ioredis'
+import {rebuildRecentComments} from './utils'
 
 let redis: Redis
 
@@ -47,11 +48,7 @@ export async function ipCount(key: string, ip: string, time: number): Promise<nu
     [err, result] = list[pipeline.length - 2]
     if (err) throw err
     if ((result as number) < 10) {
-        const pipeline = connectRedis().pipeline()
-        for (let i = result as number; i < 10; ++i) {
-            pipeline.zadd('recentComments', i, i.toString())
-        }
-        await pipeline.exec()
+        await rebuildRecentComments(false)
     }
     [err, result] = list[pipeline.length - 1]
     if (err) throw err
