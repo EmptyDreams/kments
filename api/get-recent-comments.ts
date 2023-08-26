@@ -27,7 +27,6 @@ export default async function (request: VercelRequest, response: VercelResponse)
         '+inf', 10,
         'LIMIT', 0, info.limit - 1
     )
-    console.log(list)
     if (!list || list.length == 0)
         return response.status(200).json({
             status: 200,
