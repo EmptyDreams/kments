@@ -26,6 +26,7 @@
   ],
   "redirects": [
     {"source": "/private/:path*", "destination": "/api/private/", "permanent": true},
-    {"source": "/api/utils/(.*)", "destination": "/api/private/", "permanent": true}
+    {"source": "/api/utils/(.*)", "destination": "/api/private/", "permanent": true},
+    {"source": "/favicon.(.*)", "destination": "/api/private/", "permanent": true}
   ]
 }
