@@ -72,10 +72,10 @@ export function extractReturnDate(body: MainCommentBody): any {
         id: body._id.toString(),
         name: body.name,
         email: body.emailMd5,
-        link: body.link,
+        link: body.link || undefined,
         location: body.location,
         content: body.content,
-        subCount: body.subCount ?? 0
+        subCount: body.subCount
     }
 }
 
