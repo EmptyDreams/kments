@@ -1,7 +1,7 @@
 import {VercelRequest} from '@vercel/node'
 import * as crypto from 'crypto'
 import {findOnVercel} from 'ip-china-location'
-import {Collection, Db, Document, MongoClient, ObjectId, WithId} from 'mongodb'
+import {Collection, Db, MongoClient, ObjectId} from 'mongodb'
 import path from 'path'
 import {connectRedis, ipCount} from './RedisOperator'
 
