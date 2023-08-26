@@ -39,8 +39,6 @@ const blackMap = new Map<string, Set<string>>()
  * 限制 IP 访问频率
  * @param key 分类
  * @param ip IP
- * @param time 时间周期
- * @param limit 次数限制
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
 export async function rateLimit(key: string, ip: string | undefined): Promise<[number, number]> {

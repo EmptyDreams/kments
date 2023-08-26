@@ -1,6 +1,4 @@
-import exp from 'constants'
 import Redis, {RedisOptions} from 'ioredis'
-import {ObjectId} from 'mongodb'
 
 let redis: Redis
 
