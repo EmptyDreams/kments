@@ -22,6 +22,7 @@
     {"source": "/get-comments(\/?)?:path*", "destination": "/api/get-comments/?:path*"},
     {"source": "/post-comment/", "destination": "/api/post-comment/"},
     {"source": "/get-recent-comments/", "destination": "/api/get-recent-comments/"},
+    {"source": "/admin-certificate/", "destination": "/api/admin-certificate/"},
     {"source": "(\/$)", "destination": "/api/index/"}
   ],
   "redirects": [
