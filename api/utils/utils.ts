@@ -145,7 +145,10 @@ export async function initRequest(
     return {location, count, ip}
 }
 
-/** 重建最近评论索引表 */
+/**
+ * 重建最近评论索引表
+ * @param cache 现有的队列（按发布日期从新到旧排列）
+ */
 export async function rebuildRecentComments(cache?: string[]) {
     type Element = {id: ObjectId, pageId: string}
     const list: Element[] = []
@@ -163,7 +166,7 @@ export async function rebuildRecentComments(cache?: string[]) {
     const db = await connectDatabase()
     const collections = (await db.collections()).filter(it => it.collectionName.startsWith('c-'))
     function insertElement(ele: Element) {
-        let index = list.findIndex(it => it.id.getTimestamp().getTime() > ele.id.getTimestamp().getTime())
+        let index = list.findIndex(it => it.id.getTimestamp().getTime() < ele.id.getTimestamp().getTime())
         if (index == -1) index = list.length
         list.splice(index, 0, ele)
         if (list.length > 10)
