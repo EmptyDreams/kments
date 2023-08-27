@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
 import {MainCommentBody} from './post-comment'
-import {checkRequest, connectDatabase} from './utils/utils'
+import {initRequest, connectDatabase} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -16,8 +16,8 @@ import {checkRequest, connectDatabase} from './utils/utils'
  * + `len`: 获取的评论数量（缺省 10）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await checkRequest(request, {allows: 'all'}, 'GET')
-    if (checkResult.status != 200) return response.status(checkResult.status).send(checkResult.msg)
+    const checkResult = await initRequest(request, response, {allows: 'all'}, 'GET')
+    if (!checkResult) return
     // 提取和检查请求参数信息
     const info = extractInfo(request)
     if (typeof info == 'string')

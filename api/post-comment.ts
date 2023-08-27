@@ -3,7 +3,7 @@ import * as HTMLChecker from 'fast-html-checker'
 import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
 import {connectRedis} from './utils/RedisOperator'
-import {calcHash, checkRequest, connectDatabase} from './utils/utils'
+import {calcHash, initRequest, connectDatabase} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -22,11 +22,11 @@ import {calcHash, checkRequest, connectDatabase} from './utils/utils'
  * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await checkRequest(request, {allows: 'china'}, 'POST')
-    if (checkResult.status != 200) return response.status(checkResult.status).send(checkResult.msg)
+    const checkResult = await initRequest(request, response, {allows: 'china'}, 'POST')
+    if (!checkResult) return
     const {ip, location} = checkResult
     // 提取评论内容
-    const commentBody = extractInfo(request, ip!, location!)
+    const commentBody = extractInfo(request, ip, location!)
     if (typeof commentBody === 'string') {
         return response.status(400).json({
             status: 400,

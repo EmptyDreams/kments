@@ -5,6 +5,7 @@
   "devDependencies": {
     "@types/node": "^20.5.0",
     "@types/node-fetch": "^2.6.4",
+    "@types/seedrandom": "^3.0.5",
     "@vercel/node": "^2.15.10",
     "typescript": "^5.1.6"
   },
@@ -14,6 +15,7 @@
     "ip-china-location": "^1.1.1",
     "mongodb": "^5.8.1",
     "node-fetch": "^2.6.12",
-    "redis": "^4.6.7"
+    "redis": "^4.6.7",
+    "seedrandom": "^3.0.5"
   }
 }
