@@ -1,11 +1,12 @@
 import {VercelRequest, VercelResponse} from "@vercel/node"
-import {connectDatabase, initRequest} from './utils/utils'
+import {connectRedis} from './utils/RedisOperator'
+import {initRequest} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 export default async function(request: VercelRequest, response: VercelResponse) {
     const time = Date.now()
-    const db = await connectDatabase()
-    await db.collection('c-test').insertOne({a: 'test content'})
+    await connectRedis().set('test', 'test content')
+    await connectRedis().del('test')
     const endTime = Date.now()
     return response.status(200).send(endTime - time)
     // const checkResult = await initRequest(request, response, {allows: 'china'}, 'GET')
