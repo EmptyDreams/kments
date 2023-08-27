@@ -6,6 +6,7 @@ import path from 'path'
 import {connectRedis, ipCount} from './RedisOperator'
 
 let db: Db
+const isDev = process.env['VERCEL_ENV'] == 'development'
 
 /** 连接数据库 */
 export async function connectDatabase(): Promise<Db> {
@@ -83,6 +84,8 @@ export async function initRequest(
     request: VercelRequest, response: VercelResponse, regionLimit: RegionLimit, ...allowMethods: string[]
 ): Promise<false | RequestInfo> {
     const url = process.env['DOM_URL']!
+    response.setHeader('Access-Control-Allow-Origin', url)
+    if (isDev) return {location: '中国', ip: '::1', count: 0}
     if (!request.headers.referer?.startsWith(url)) {
         response.status(403).end()
         return false
@@ -136,7 +139,6 @@ export async function initRequest(
         response.status(429).end()
         return false
     }
-    response.setHeader('Access-Control-Allow-Origin', url)
     return {location, count, ip}
 }
 
