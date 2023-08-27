@@ -22,7 +22,7 @@ export function connectRedis(): Redis {
                 host: process.env['REDIS_HOST'],
                 port: Number.parseInt(process.env['REDIS_PORT']!),
                 password: process.env['REDIS_PASSWORD'],
-                ...optional
+                lazyConnect: true
             })
         throw '没有配置 Redis'
     }
