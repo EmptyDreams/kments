@@ -54,4 +54,11 @@ async function deleteCommentsFromCollection(db: Db, pageId: string, list: string
             await collection.deleteMany({_id: {$in: children.map(it => new ObjectId(it))}})
         }
     }
+    await Promise.all(
+        Object.getOwnPropertyNames(decrease)
+            .map(id => collection.updateOne(
+                    {_id: new ObjectId(id)}, {$inc: {subCount: decrease[id]}}
+                )
+            )
+    )
 }
