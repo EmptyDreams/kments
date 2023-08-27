@@ -1,6 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {connectRedis} from './utils/RedisOperator'
-import {calcHash, initRequest} from './utils/utils'
+import {calcHash, initRequest, isDev} from './utils/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -16,10 +16,11 @@ export default async function (request: VercelRequest, response: VercelResponse)
         status: 403,
         msg: '密码错误'
     })
-    const url = process.env['DOM_URL']!
     const adminId = calcHash('md5', `${Date.now()}-${password}-${Math.random()}`)
-    response.setHeader('Set-Cookie', `__Secure-admin="${adminId}"; Max-Age=2592000; Domain=${new URL(url).host}; Secure; HttpOnly; SameSite=None;`)
+    const domain = isDev ? 'localhost' : new URL(process.env['DOM_URL']!).host
+    response.setHeader('Set-Cookie', `admin="${adminId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; HttpOnly; SameSite=None;`)
     await connectRedis().set(`admin`, adminId)
+    console.log(adminId)
     response.status(200).json({
         status: 200
     })

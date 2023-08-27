@@ -48,7 +48,7 @@ export async function ipCount(key: string, ip: string, time: number): Promise<nu
     [err, result] = list[pipeline.length - 2]
     if (err) throw err
     if ((result as number) < 10) {
-        await rebuildRecentComments(false)
+        await rebuildRecentComments()
     }
     [err, result] = list[pipeline.length - 1]
     if (err) throw err

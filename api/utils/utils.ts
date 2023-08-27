@@ -6,7 +6,7 @@ import path from 'path'
 import {connectRedis, ipCount} from './RedisOperator'
 
 let db: Db
-const isDev = process.env['VERCEL_ENV'] == 'development'
+export const isDev = process.env['VERCEL_ENV'] == 'development'
 
 /** 连接数据库 */
 export async function connectDatabase(): Promise<Db> {
@@ -83,9 +83,11 @@ export interface RequestInfo {
 export async function initRequest(
     request: VercelRequest, response: VercelResponse, regionLimit: RegionLimit, ...allowMethods: string[]
 ): Promise<false | RequestInfo> {
+    if (isDev) {
+        response.setHeader('Access-Control-Allow-Origin', `http://${process.env['VERCEL_URL']}`)
+        return {location: '中国', ip: '::1', count: 0}
+    }
     const url = process.env['DOM_URL']!
-    response.setHeader('Access-Control-Allow-Origin', url)
-    if (isDev) return {location: '中国', ip: '::1', count: 0}
     if (!request.headers.referer?.startsWith(url)) {
         response.status(403).end()
         return false
@@ -139,17 +141,17 @@ export async function initRequest(
         response.status(429).end()
         return false
     }
+    response.setHeader('Access-Control-Allow-Origin', url)
     return {location, count, ip}
 }
 
 /** 重建最近评论索引表 */
-export async function rebuildRecentComments(cache: boolean) {
+export async function rebuildRecentComments(cache?: string[]) {
     type Element = {id: ObjectId, pageId: string}
     const list: Element[] = []
     if (cache) {
-        const oldData = await connectRedis().zrangebyscore('recentComments', '+inf', 10)
         list.push(
-            ...oldData.map(it => {
+            ...cache.map(it => {
                 const data = it.split(':', 2)
                 return {
                     id: new ObjectId(data[0]),
