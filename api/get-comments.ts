@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
 import {MainCommentBody} from './post-comment'
-import {initRequest, connectDatabase} from './utils/utils'
+import {initRequest, connectDatabase} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

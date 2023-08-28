@@ -2,8 +2,8 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import * as HTMLChecker from 'fast-html-checker'
 import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
-import {connectRedis} from './utils/RedisOperator'
-import {calcHash, initRequest, connectDatabase} from './utils/utils'
+import {connectRedis} from './lib/RedisOperator'
+import {calcHash, initRequest, connectDatabase} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

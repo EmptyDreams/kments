@@ -1,8 +1,8 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Db, ObjectId} from 'mongodb'
 import {MainCommentBody} from './post-comment'
-import {connectRedis} from './utils/RedisOperator'
-import {connectDatabase, initRequest, rebuildRecentComments} from './utils/utils'
+import {connectRedis} from './lib/RedisOperator'
+import {connectDatabase, initRequest, rebuildRecentComments} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

@@ -1,5 +1,5 @@
 import {VercelRequest, VercelResponse} from "@vercel/node"
-import {initRequest} from './utils/utils'
+import {initRequest} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 export default async function(request: VercelRequest, response: VercelResponse) {
