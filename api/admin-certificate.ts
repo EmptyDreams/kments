@@ -24,7 +24,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
     })
     const adminId = calcHash('md5', `${Date.now()}-${password}-${Math.random()}`)
     const domain = isDev ? 'localhost' : config.domUrl.host
-    response.setHeader('Set-Cookie', `admin="${adminId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; HttpOnly; SameSite=None;`)
+    response.setHeader(
+        'Set-Cookie',
+        `admin="${adminId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; HttpOnly; SameSite=None;`
+    )
     await connectRedis().set(`admin`, adminId)
     response.status(200).json({
         status: 200

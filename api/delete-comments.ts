@@ -35,19 +35,25 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
     const oldLength = recentComments.length
     const db = await connectDatabase()
-    await Promise.all(Object.getOwnPropertyNames(body).map(it => deleteCommentsFromCollection(db, it, body[it], recentComments)))
+    await Promise.all(
+        Object.getOwnPropertyNames(body)
+            .map(it => deleteCommentsFromCollection(db, it, body[it], recentComments))
+    )
     if (recentComments.length != oldLength)
         await rebuildRecentComments(recentComments)
     response.status(200).end()
 }
 
-async function deleteCommentsFromCollection(db: Db, pageId: string, list: string[], recentComments: string[]) {
+async function deleteCommentsFromCollection(
+    db: Db, pageId: string, list: string[], recentComments: string[]
+) {
     const collection = db.collection<MainCommentBody>(`c-${encodeURIComponent(pageId)}`)
     const decrease: {[propName: string]: number} = {}
     for (let commentId of list) {
-        const comment = await collection.findOneAndDelete({_id: new ObjectId(commentId)}, {
-            projection: { reply: true, children: true }
-        })
+        const comment = await collection.findOneAndDelete(
+            {_id: new ObjectId(commentId)},
+            {projection: {reply: true, children: true}}
+        )
         if ('reply' in comment) {
             if (!list.includes(commentId))
                 decrease[commentId] = (decrease[commentId] ?? 0) - 1
