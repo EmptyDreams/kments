@@ -1,7 +1,8 @@
-import {CheckResult} from 'fast-html-checker'
 import * as HTMLChecker from 'fast-html-checker'
+import {CheckResult} from 'fast-html-checker'
 import * as HTMLParser from 'fast-html-parser'
 import path from 'path'
+import {AuthCodeEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
 
 let loaded: KmentsConfig
 
@@ -32,17 +33,41 @@ export function loadConfigFrom(path: string): KmentsConfig {
     }
     merge(config, defaultConfig)
     initEnv(config)
+    initEmail(config)
     return config
 }
 
+function initEmail(config: any) {
+    const {email, replyEmail, authCodeEmail} = config
+    if (email) {
+        for (let key in email) {
+            const value = email[key]
+            if (replyEmail && !(key in replyEmail)) replyEmail[key] = value
+            if (authCodeEmail && !(key in authCodeEmail)) authCodeEmail[key] = value
+        }
+    }
+    if (replyEmail?.password || authCodeEmail?.password)
+        throw '用户禁止在 TS 配置中填写邮箱配置中的密码字段！'
+    const passwords = config.env.emailPassword
+    if (replyEmail)
+        replyEmail.password = passwords.reply
+    if (authCodeEmail)
+        authCodeEmail.password = passwords.authCode
+}
+
 function initEnv(config: any) {
+    const emailPassword = process.env['EMAIL_PASSWORD']
     const env: any = config.env = {
         adminPassword: process.env['ADMIN_PASSWORD'],
         mongodb: {
             name: process.env['MONGODB_NAME'],
             password: process.env['MONGODB_PASSWORD']
         },
-        emailPassword: process.env['EMAIL_PASSWORD']
+        emailPassword: {
+            email: emailPassword,
+            reply: process.env['EMAIL_PASSWORD_REPLY'] ?? emailPassword,
+            authCode: process.env['EMAIL_PASSWORD_AUTH'] ?? emailPassword
+        }
     }
     if ('KV_URL' in process.env) {
         env.redis = {
@@ -83,43 +108,22 @@ export interface KmentsConfig extends KmentsConfigTemplate {
             password?: string,
             tls: boolean
         }
-        emailPassword: string
+        emailPassword: {
+            email: string
+            reply: string
+            authCode: string
+        }
     }
-}
-
-export type EmailContentBuilder = (info: EmailContentInfo) => string
-
-export type EmailContentInfo = {
-    /** 对方的名称 */
-    name: string
-    /** 对方邮箱的 MD5 */
-    email: string
-    /** 评论所在页面的名称 */
-    page: string
-    /** 评论所在页面的 URL */
-    pageUrl: URL
-    /** 对方的评论内容 */
-    content: string
-    /** 回复地址 */
-    reply: URL
 }
 
 export interface KmentsConfigTemplate {
     /** 前端的 URL */
     domUrl: URL
-    /** 邮箱配置 */
-    email?: {
-        service: 'Gmail' | 'Hotmail' | 'Outlook' | 'Yahoo' | 'QQ' | 'Zoho' | 'SMTP'
-        user: string
-        title: string
-        name: string
-        fromEmail?: string
-        host?: string
-        port?: number
-        text?: EmailContentBuilder
-        html?: EmailContentBuilder
-        amp?: EmailContentBuilder
-    }
+    email?: EmailBasicConfig
+    /** 评论通知邮箱配置 */
+    replyEmail?: EmailConfig<CommentReplyEmailInfo>
+    /** 用户认证验证码邮箱配置 */
+    authCodeEmail?: EmailConfig<AuthCodeEmailInfo>
     /** 访问频率限制 */
     rateLimit?: {[propName in RateLimitKeys]: RateLimitExp}
     /**
@@ -174,12 +178,21 @@ const defaultConfig = {
             allowTags: ['a']
         })
     },
-    email: {
-        text: (info: EmailContentInfo): string =>
-            `${info.name} 回复了您的评论:
-            ${HTMLParser.parse(info.content).text}
-            -~~-~~-~~-~~-~~-~~-~~-~~-~~-
-            如需回复，请前往 ${info.reply.href} (￣▽￣)"`,
-        html: (info: EmailContentInfo): string => ``    // TODO: 在这里写 HTML 内容，不需要最外部的 <html> 标签
+    replyEmail: {
+        text: (info: CommentReplyEmailInfo): string =>
+            `${info.name} 回复了您的评论：\n` +
+            `${HTMLParser.parse(info.content).text}\n` +
+            `-~~-~~-~~-~~-~~-~~-~~-~~-~~-\n` +
+            `如需回复，请前往 ${info.reply.href} (￣▽￣)"\n` +
+            `请勿转发该邮件，这可能导致他人以您的身份发布评论！`,
+        html: (info: CommentReplyEmailInfo): string => ``,      // TODO: 在这里写评论通知的 HTML 内容，不需要最外部的 <html> 标签
+        amp: (info: CommentReplyEmailInfo): string => ``        // TODO: 在这里写评论通知的 AMP 内容，需要最外部的 <html> 标签
+    },
+    authCodeEmail: {
+        text: (info: AuthCodeEmailInfo): string =>
+            `您好！这是用于${info.msg}的验证码，请您接收：${info.code}\n` +
+            `请勿将该验证码告知他人，以防您的个人信息泄露或身份被顶替！\n` +
+            `如果您没有在本站（${loadConfig().domUrl}）进行${info.msg}，可能是由于有人误用您的邮箱或冒名顶替您的身份，您可以与我沟通协商解决。`,
+        html: (info: AuthCodeEmailInfo): string => ``       // TODO: 在这里写身份认证验证码的 HTML 内容
     }
 }
