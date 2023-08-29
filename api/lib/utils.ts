@@ -1,26 +1,13 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import * as crypto from 'crypto'
 import {findOnVercel} from 'ip-china-location'
-import {Collection, Db, MongoClient, ObjectId} from 'mongodb'
+import {Collection, ObjectId} from 'mongodb'
 import path from 'path'
 import {KmentsConfig, loadConfig, RateLimitKeys} from './ConfigLoader'
+import {connectDatabase} from './DatabaseOperator'
 import {connectRedis, ipCount} from './RedisOperator'
 
-let db: Db
 export const isDev = process.env['VERCEL_ENV'] == 'development'
-
-/** 连接数据库 */
-export async function connectDatabase(): Promise<Db> {
-    if (db) return db
-    const config = loadConfig().env.mongodb
-    // noinspection SpellCheckingInspection
-    const client = new MongoClient(
-        `mongodb+srv://${config.name}:${config.name}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,
-        {compressors: ['zstd', 'zlib']}
-    )
-    db = client.db('kments')
-    return db
-}
 
 /** 获取用户 IP 地址 */
 export function getUserIp(request: VercelRequest): string | undefined {

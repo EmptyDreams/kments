@@ -2,8 +2,9 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
 import {loadConfig} from './lib/ConfigLoader'
+import {connectDatabase} from './lib/DatabaseOperator'
 import {connectRedis} from './lib/RedisOperator'
-import {calcHash, initRequest, connectDatabase} from './lib/utils'
+import {calcHash, initRequest} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
