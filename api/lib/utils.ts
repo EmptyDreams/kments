@@ -3,6 +3,7 @@ import * as crypto from 'crypto'
 import {findOnVercel} from 'ip-china-location'
 import {Collection, Db, MongoClient, ObjectId} from 'mongodb'
 import path from 'path'
+import {KmentsConfig, loadConfig, RateLimitKeys} from './ConfigLoader'
 import {connectRedis, ipCount} from './RedisOperator'
 
 let db: Db
@@ -40,23 +41,53 @@ const blackMap = new Map<string, Set<string>>()
 
 /**
  * 限制 IP 访问频率
- * @param key 分类
- * @param ip IP
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
-export async function rateLimit(key: string, ip: string): Promise<[number, number]> {
+export async function rateLimit(key: RateLimitKeys, ip: string, config: KmentsConfig): Promise<[number, number]> {
     let blacked = blackMap.get(key)
     if (blacked?.has(ip)) return [429, -1]
-    const time = Number.parseInt(process.env['RATE_LIMIT_TIME'] ?? '10000')
-    const limit = Number.parseInt(process.env['RATE_LIMIT_COUNT'] ?? '100')
-    const count = await ipCount(key, ip, time)
-    if (count > limit) {
+    function initBlacked() {
         if (!blacked) {
-            blacked = new Set<string>()
+            blacked = new Set()
             blackMap.set(key, blacked)
         }
-        blacked.add(ip)
-        return [429, count]
+        return blacked
+    }
+    const remoteBlackCheck = await connectRedis().pipeline()
+        .sismember(`black-${key}`, ip)
+        .exists(`black-ex-${ip}`)
+        .exec()
+    if (remoteBlackCheck![0][1]) {
+        initBlacked().add(ip)
+        return [429, -1]
+    }
+    if (remoteBlackCheck![1][1]) return [429, -1]
+    const limit = config.rateLimit?.[key]
+    if (!limit) return [200, -1]
+    const count = await ipCount(key, ip, limit.cycle)
+    for (let level of limit.level) {
+        if (count < level[0]) continue
+        if (level[1] == -1) {
+            // noinspection FallThroughInSwitchStatementJS
+            switch (level[2]) {
+                case -2:
+                    await connectRedis().pipeline()
+                        .sadd(`black-${key}`, ip)
+                        .del(`${key}:${ip}`)
+                        .exec()
+                case -1:
+                    initBlacked().add(ip)
+                    break
+                default:
+                    await connectRedis().setex(`black-ex-${ip}`, level[2], 0)
+                    break
+            }
+            return [429, count]
+        } else {
+            return new Promise(resolve => {
+                setTimeout(() => resolve([200, count]), level[1])
+            })
+        }
     }
     return [200, count]
 }
@@ -76,18 +107,21 @@ export interface RegionLimit {
 export interface RequestInfo {
     ip: string,
     location?: string,
-    count: number
+    count: number,
+    config: KmentsConfig
 }
 
 /** 对请求进行合法性检查 */
 export async function initRequest(
-    request: VercelRequest, response: VercelResponse, regionLimit: RegionLimit, ...allowMethods: string[]
+    request: VercelRequest, response: VercelResponse,
+    rateLimitKey: RateLimitKeys, regionLimit: RegionLimit, ...allowMethods: string[]
 ): Promise<false | RequestInfo> {
+    const config = await loadConfig()
     if (isDev) {
         response.setHeader('Access-Control-Allow-Origin', `http://${process.env['VERCEL_URL']}`)
-        return {location: '中国', ip: '::1', count: 0}
+        return {location: '中国', ip: '::1', count: 0, config}
     }
-    const url = process.env['DOM_URL']!
+    const url = config.domUrl.href
     if (!request.headers.referer?.startsWith(url)) {
         response.status(403).end()
         return false
@@ -136,13 +170,13 @@ export async function initRequest(
             break
     }
     if (!location) location = '国外'
-    const [status, count] = await rateLimit('base', ip)
+    const [status, count] = await rateLimit(rateLimitKey, ip, config)
     if (status != 200) {
-        response.status(429).end()
+        response.status(status).end()
         return false
     }
     response.setHeader('Access-Control-Allow-Origin', url)
-    return {location, count, ip}
+    return {location, count, ip, config}
 }
 
 /**
