@@ -35,11 +35,12 @@ export function loadConfigFrom(path: string): KmentsConfig {
 }
 
 function initEnv(config: any) {
-    const env = config.env
-    env.adminPassword = process.env['ADMIN_PASSWORD']
-    env.mongodb = {
-        name: process.env['MONGODB_NAME'],
-        password: process.env['MONGODB_PASSWORD']
+    const env: any = config.env = {
+        adminPassword: process.env['ADMIN_PASSWORD'],
+        mongodb: {
+            name: process.env['MONGODB_NAME'],
+            password: process.env['MONGODB_PASSWORD']
+        }
     }
     if ('KV_URL' in process.env) {
         env.redis = {
