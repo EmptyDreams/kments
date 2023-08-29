@@ -1,5 +1,4 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {loadConfig} from './lib/ConfigLoader'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest, isDev} from './lib/utils'
 
