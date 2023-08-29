@@ -2,7 +2,7 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Document, ObjectId, WithId} from 'mongodb'
 import {extractReturnDate, readCommentsFromDb} from './get-comments'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {MainCommentBody} from './post-comment'
+import {CommentBody} from './post-comment'
 import {connectRedis} from './lib/RedisOperator'
 import {initRequest} from './lib/utils'
 
@@ -55,7 +55,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const array = await Promise.all(task)
     const resultList = array.flatMap(
         list =>
-            list.map(it => extractReturnDate(it as MainCommentBody))
+            list.map(it => extractReturnDate(it as CommentBody))
     )
     resultList.sort((a, b) => a._id.getTimestamp().getTime() - b._id.getTimestamp().getTime())
     response.status(200).json({

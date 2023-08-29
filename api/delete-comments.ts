@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Db, ObjectId} from 'mongodb'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {MainCommentBody} from './post-comment'
+import {CommentBody} from './post-comment'
 import {connectRedis} from './lib/RedisOperator'
 import {initRequest, rebuildRecentComments} from './lib/utils'
 
@@ -48,7 +48,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
 async function deleteCommentsFromCollection(
     db: Db, pageId: string, list: string[], recentComments: string[]
 ) {
-    const collection = db.collection<MainCommentBody>(`c-${encodeURIComponent(pageId)}`)
+    const collection = db.collection<CommentBody>(`c-${encodeURIComponent(pageId)}`)
     const decrease: {[propName: string]: number} = {}
     for (let commentId of list) {
         const comment = await collection.findOneAndDelete(

@@ -48,7 +48,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     }
     const collectionName = commentBody.page!
     delete commentBody['page']
-    const collection = (await connectDatabase()).collection<MainCommentBody>(collectionName)
+    const collection = (await connectDatabase()).collection<CommentBody>(collectionName)
     Promise.all([
         collection.insertOne(commentBody),
         reply(collection, commentBody),
@@ -62,7 +62,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
 }
 
 /** 推送一个新的评论记录到 redis */
-async function pushNewCommentToRedis(pageId: string, body: MainCommentBody) {
+async function pushNewCommentToRedis(pageId: string, body: CommentBody) {
     if ('reply' in body) return
     const id = body._id
     const key = 'recentComments'
@@ -74,7 +74,7 @@ async function pushNewCommentToRedis(pageId: string, body: MainCommentBody) {
 }
 
 /** 回复评论 */
-async function reply(collection: Collection<MainCommentBody>, body: MainCommentBody) {
+async function reply(collection: Collection<CommentBody>, body: CommentBody) {
     let {reply, at} = body
     if (!reply) return
     await Promise.all([
@@ -94,14 +94,14 @@ async function reply(collection: Collection<MainCommentBody>, body: MainCommentB
 }
 
 /** 从请求中提取评论信息 */
-function extractInfo(request: VercelRequest, ip: string, location: string): MainCommentBody | string {
+function extractInfo(request: VercelRequest, ip: string, location: string): CommentBody | string {
     const json = request.body
     const list = ['name', 'email', 'pageId', 'content']
     for (let key of list) {
         if (!(key in json))
             return `${key} 值缺失`
     }
-    const result: MainCommentBody = {
+    const result: CommentBody = {
         _id: new ObjectId(),
         name: json.name,
         email: json.email,
@@ -122,7 +122,7 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Main
  * 检查评论是否可以发布
  * @return {boolean|string} 返回 true 表示可以，否则表示不可以
  */
-function checkComment(body: MainCommentBody): boolean | string {
+function checkComment(body: CommentBody): boolean | string {
     const banChars = ['.', '*']
     if (banChars.find(it => body.page!.includes(it)))
         return '页面 ID 不能包含英文句号和星号'
@@ -145,7 +145,7 @@ function checkComment(body: MainCommentBody): boolean | string {
 }
 
 /** 楼主评论 body */
-export interface MainCommentBody extends Document {
+export interface CommentBody extends Document {
     _id: ObjectId,
     /** 发表用户的名称 */
     name: string,

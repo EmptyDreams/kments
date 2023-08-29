@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {MainCommentBody} from './post-comment'
+import {CommentBody} from './post-comment'
 import {initRequest} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
@@ -36,7 +36,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     ).skip(info.start).limit(info.len).toArray()
     response.status(200).json({
         status: 200,
-        data: list.map(it => extractReturnDate(it as MainCommentBody))
+        data: list.map(it => extractReturnDate(it as CommentBody))
     })
 }
 
@@ -64,7 +64,7 @@ export function readCommentsFromDb(collection: Collection, filter: Filter<Docume
 }
 
 /** 提取返回给客户端的数据 */
-export function extractReturnDate(body: MainCommentBody): any {
+export function extractReturnDate(body: CommentBody): any {
     return {
         id: body._id.toString(),
         name: body.name,
