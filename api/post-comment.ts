@@ -3,6 +3,7 @@ import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
+import {sendReplyTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest} from './lib/utils'
 
@@ -19,6 +20,7 @@ import {calcHash, initRequest} from './lib/utils'
  * + email: string - 发布人邮箱
  * + link: string - 发布人的主页（可选）
  * + content: string - 评论内容（HTML）
+ * + pageTitle: string - 当前页面的名称（可选）
  * + reply: string - 要回复的评论的 ID（可选）
  * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
  */
@@ -31,32 +33,31 @@ export default async function (request: VercelRequest, response: VercelResponse)
     if (!checkResult) return
     const {ip, location} = checkResult
     // 提取评论内容
-    const commentBody = extractInfo(request, ip, location!)
-    if (typeof commentBody === 'string') {
+    const {body, pageId, pageTitle, pageUrl, msg} = extractInfo(request, ip, location!) as any
+    if (msg) {
         return response.status(400).json({
             status: 400,
-            msg: commentBody
+            msg: msg
         })
     }
     // 检查是否允许发布
-    const commentChecked = checkComment(commentBody)
+    const commentChecked = checkComment(body, pageId)
     if (typeof commentChecked === 'string') {
         return response.status(200).json({
             status: 403,
             message: commentChecked
         })
     }
-    const collectionName = commentBody.page!
-    delete commentBody['page']
+    const collectionName = body.page!
     const collection = (await connectDatabase()).collection<CommentBody>(collectionName)
     Promise.all([
-        collection.insertOne(commentBody),
-        reply(collection, commentBody),
-        pushNewCommentToRedis(collectionName, commentBody)
+        collection.insertOne(body),
+        reply(collection, body, pageTitle, pageUrl),
+        pushNewCommentToRedis(collectionName, body)
     ]).then(() => {
         response.status(200).json({
             status: 200,
-            data: extractReturnDate(commentBody)
+            data: extractReturnDate(body)
         })
     })
 }
@@ -74,15 +75,26 @@ async function pushNewCommentToRedis(pageId: string, body: CommentBody) {
 }
 
 /** 回复评论 */
-async function reply(collection: Collection<CommentBody>, body: CommentBody) {
+async function reply(collection: Collection<CommentBody>, body: CommentBody, title: string, url: string) {
     let {reply, at} = body
     if (!reply) return
     await Promise.all([
-        collection.updateOne({
+        collection.findOneAndUpdate({
             _id: new ObjectId(reply)
         }, {
             $inc: { subCount: 1},
+            // @ts-ignore
             $push: { children: reply }
+        }, {projection: {email: true}}).then(comment => {
+            if ('email' in comment)
+                return sendReplyTo(comment.email as string, {
+                    content: body.content,
+                    email: comment.email as string,
+                    name: body.name,
+                    page: title,
+                    pageUrl: new URL(url),
+                    reply: new URL(url)
+                })
         }),
         at ? collection.updateMany({
             _id: {$in: at.map(it => new ObjectId(it))}
@@ -94,12 +106,14 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody) {
 }
 
 /** 从请求中提取评论信息 */
-function extractInfo(request: VercelRequest, ip: string, location: string): CommentBody | string {
+function extractInfo(
+    request: VercelRequest, ip: string, location: string
+): { body: CommentBody, pageId: string, pageTitle?: string, pageUrl: string } | { msg: string } {
     const json = request.body
     const list = ['name', 'email', 'pageId', 'content']
     for (let key of list) {
         if (!(key in json))
-            return `${key} 值缺失`
+            return {msg: `${key} 值缺失`}
     }
     const result: CommentBody = {
         _id: new ObjectId(),
@@ -108,25 +122,29 @@ function extractInfo(request: VercelRequest, ip: string, location: string): Comm
         emailMd5: calcHash('md5', json.email),
         link: json.link,
         ip, location,
-        page: `c-${json['pageId']}`,
         content: json.content
     }
     if ('reply' in json)
         result.reply = json.reply
     if ('at' in json)
         result.at = json.at
-    return result
+    return {
+        body: result,
+        pageId: `c-${json['pageId']}`,
+        pageTitle: json.pageTitle,
+        pageUrl: request.headers.referer ?? 'http://localhost.dev/'
+    }
 }
 
 /**
  * 检查评论是否可以发布
  * @return {boolean|string} 返回 true 表示可以，否则表示不可以
  */
-function checkComment(body: CommentBody): boolean | string {
+function checkComment(body: CommentBody, pageId: string): boolean | string {
     const banChars = ['.', '*']
     if (banChars.find(it => body.page!.includes(it)))
         return '页面 ID 不能包含英文句号和星号'
-    if (body.page!.length > 64)
+    if (pageId.length > 64)
         return '页面 ID 长度过长'
     const checker = loadConfig().commentChecker
     if (checker.user) {
@@ -163,8 +181,6 @@ export interface CommentBody extends Document {
     location: string,
     /** 子评论的数量 */
     subCount?: number,
-    /** 发表页面地址或其它唯一标识符 */
-    page?: string,
     /** 要回复的评论 */
     reply?: string,
     /** 要 at 的评论 */
