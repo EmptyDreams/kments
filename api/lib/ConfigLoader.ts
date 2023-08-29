@@ -1,5 +1,6 @@
 import {CheckResult} from 'fast-html-checker'
 import * as HTMLChecker from 'fast-html-checker'
+import * as HTMLParser from 'fast-html-parser'
 import path from 'path'
 
 let loaded: KmentsConfig
@@ -40,7 +41,8 @@ function initEnv(config: any) {
         mongodb: {
             name: process.env['MONGODB_NAME'],
             password: process.env['MONGODB_PASSWORD']
-        }
+        },
+        emailPassword: process.env['EMAIL_PASSWORD']
     }
     if ('KV_URL' in process.env) {
         env.redis = {
@@ -81,12 +83,43 @@ export interface KmentsConfig extends KmentsConfigTemplate {
             password?: string,
             tls: boolean
         }
+        emailPassword: string
     }
+}
+
+export type EmailContentBuilder = (info: EmailContentInfo) => string
+
+export type EmailContentInfo = {
+    /** 对方的名称 */
+    name: string
+    /** 对方邮箱的 MD5 */
+    email: string
+    /** 评论所在页面的名称 */
+    page: string
+    /** 评论所在页面的 URL */
+    pageUrl: URL
+    /** 对方的评论内容 */
+    content: string
+    /** 回复地址 */
+    reply: URL
 }
 
 export interface KmentsConfigTemplate {
     /** 前端的 URL */
     domUrl: URL
+    /** 邮箱配置 */
+    email?: {
+        service: 'Gmail' | 'Hotmail' | 'Outlook' | 'Yahoo' | 'QQ' | 'Zoho' | 'SMTP'
+        user: string
+        title: string
+        name: string
+        fromEmail?: string
+        host?: string
+        port?: number
+        text?: EmailContentBuilder
+        html?: EmailContentBuilder
+        amp?: EmailContentBuilder
+    }
     /** 访问频率限制 */
     rateLimit?: {[propName in RateLimitKeys]: RateLimitExp}
     /**
@@ -140,5 +173,13 @@ const defaultConfig = {
         xss: (content: string): CheckResult => HTMLChecker.check(content, {
             allowTags: ['a']
         })
+    },
+    email: {
+        text: (info: EmailContentInfo): string =>
+            `${info.name} 回复了您的评论:
+            ${HTMLParser.parse(info.content).text}
+            -~~-~~-~~-~~-~~-~~-~~-~~-~~-
+            如需回复，请前往 ${info.reply.href} (￣▽￣)"`,
+        html: (info: EmailContentInfo): string => ``    // TODO: 在这里写 HTML 内容，不需要最外部的 <html> 标签
     }
 }
