@@ -86,15 +86,20 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             // @ts-ignore
             $push: { children: reply }
         }, {projection: {email: true}}).then(comment => {
-            if ('email' in comment)
-                return sendReplyTo(comment.email as string, {
+            if ('email' in comment) {
+                const email = comment.email as string
+                return sendReplyTo(email, {
                     content: body.content,
-                    email: comment.email as string,
+                    email: email,
                     name: body.name,
                     page: title,
                     pageUrl: new URL(url),
                     reply: new URL(url)
+                }).catch(err => {
+                    console.error('评论邮件通知发送失败')
+                    console.error(err)
                 })
+            }
         }),
         at ? collection.updateMany({
             _id: {$in: at.map(it => new ObjectId(it))}
