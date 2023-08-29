@@ -12,9 +12,10 @@ export const isDev = process.env['VERCEL_ENV'] == 'development'
 /** 连接数据库 */
 export async function connectDatabase(): Promise<Db> {
     if (db) return db
+    const config = loadConfig().env.mongodb
     // noinspection SpellCheckingInspection
     const client = new MongoClient(
-        `mongodb+srv://${process.env['MONGODB_NAME']}:${process.env['MONGODB_PASSWORD']}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,
+        `mongodb+srv://${config.name}:${config.name}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,
         {compressors: ['zstd', 'zlib']}
     )
     db = client.db('kments')
@@ -116,7 +117,7 @@ export async function initRequest(
     request: VercelRequest, response: VercelResponse,
     rateLimitKey: RateLimitKeys, regionLimit: RegionLimit, ...allowMethods: string[]
 ): Promise<false | RequestInfo> {
-    const config = await loadConfig()
+    const config = loadConfig()
     if (isDev) {
         response.setHeader('Access-Control-Allow-Origin', `http://${process.env['VERCEL_URL']}`)
         return {location: '中国', ip: '::1', count: 0, config}

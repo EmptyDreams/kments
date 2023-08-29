@@ -1,4 +1,5 @@
 import Redis, {RedisOptions} from 'ioredis'
+import {loadConfig} from './ConfigLoader'
 import {rebuildRecentComments} from './utils'
 
 let redis: Redis
@@ -7,23 +8,27 @@ let redis: Redis
 export function connectRedis(): Redis {
     if (redis) return redis
     const optional: RedisOptions = {
-        lazyConnect: true,
-        tls: {
-            rejectUnauthorized: false
-        }
+        lazyConnect: true
     }
     const helper = () => {
-        if ('KV_URL' in process.env)
-            return new Redis(process.env['KV_URL']!, optional)
-        if ('REDIS_URL' in process.env)
-            return new Redis(process.env['REDIS_URL']!, optional)
-        if ('REDIS_HOST' in process.env)
-            return new Redis({
-                host: process.env['REDIS_HOST'],
-                port: Number.parseInt(process.env['REDIS_PORT']!),
-                password: process.env['REDIS_PASSWORD'],
-                lazyConnect: true
+        const env = loadConfig().env.redis
+        if (env.url) {
+            return new Redis(env.url, {
+                tls: {
+                    rejectUnauthorized: env.tls
+                }, ...optional
             })
+        } else if (env.host) {
+            return new Redis({
+                host: env.host,
+                port: env.port,
+                password: env.password,
+                tls: {
+                    rejectUnauthorized: env.tls
+                },
+                ...optional
+            })
+        }
         throw '没有配置 Redis'
     }
     return redis = helper()

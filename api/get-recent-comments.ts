@@ -16,7 +16,11 @@ import {initRequest, connectDatabase} from './lib/utils'
  * + limit - 数量限制（最大为 10，缺省 5）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, {allows: 'all'}, 'GET')
+    const checkResult = await initRequest(
+        request, response,
+        'gets', {allows: 'all'},
+        'GET'
+    )
     if (!checkResult) return
     const info = extractInfo(request)
     const list = await connectRedis().zrevrangebyscore(

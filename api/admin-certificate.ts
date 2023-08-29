@@ -1,4 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
+import {loadConfig} from './lib/ConfigLoader'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest, isDev} from './lib/utils'
 
@@ -9,18 +10,22 @@ import {calcHash, initRequest, isDev} from './lib/utils'
  * 请求方法：POST (with text)
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, {allows: 'china'}, 'POST')
+    const checkResult = await initRequest(
+        request, response,
+        'admin', {allows: 'china'},
+        'POST'
+    )
     if (!checkResult) return
+    const {config} = checkResult
     const password = request.body as string
-    if (password != process.env['ADMIN_PASSWORD']) return response.status(200).json({
+    if (password != config.env.adminPassword) return response.status(200).json({
         status: 403,
         msg: '密码错误'
     })
     const adminId = calcHash('md5', `${Date.now()}-${password}-${Math.random()}`)
-    const domain = isDev ? 'localhost' : new URL(process.env['DOM_URL']!).host
+    const domain = isDev ? 'localhost' : config.domUrl.host
     response.setHeader('Set-Cookie', `admin="${adminId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; HttpOnly; SameSite=None;`)
     await connectRedis().set(`admin`, adminId)
-    console.log(adminId)
     response.status(200).json({
         status: 200
     })

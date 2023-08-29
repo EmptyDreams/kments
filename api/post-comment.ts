@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import * as HTMLChecker from 'fast-html-checker'
 import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
+import {loadConfig} from './lib/ConfigLoader'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest, connectDatabase} from './lib/utils'
 
@@ -22,7 +22,11 @@ import {calcHash, initRequest, connectDatabase} from './lib/utils'
  * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, {allows: 'china'}, 'POST')
+    const checkResult = await initRequest(
+        request, response,
+        'post', {allows: 'china'},
+        'POST'
+    )
     if (!checkResult) return
     const {ip, location} = checkResult
     // 提取评论内容
@@ -123,19 +127,19 @@ function checkComment(body: MainCommentBody): boolean | string {
         return '页面 ID 不能包含英文句号和星号'
     if (body.page!.length > 64)
         return '页面 ID 长度过长'
-    const env = process.env
-    const blocked = {
-        user: env['USER_BLOCKED'] ? JSON.parse(env['USER_BLOCKED']) : ['免费', '节点', 'clash', 'v2ray', '机场'],
-        link: env['LINK_BLOCKED'] ? new RegExp(env['LINK_BLOCKED'], 'i') : /^(https?:\/\/|\/\/)?k?github\.com/i
+    const checker = loadConfig().commentChecker
+    if (checker.user) {
+        const msg = checker.user(body.name, body.email, body.link)
+        if (msg) return msg
     }
-    if (blocked.user.find((keyword: string) => body.name.includes(keyword)))
-        return '用户名称包含违规内容'
-    if (body.link && blocked.link.test(body.link))
-        return '用户主页已被屏蔽'
-    if (HTMLChecker.check(body.content, {
-            allowTags: ['a', 'strong']
-        })
-    ) return '用户评论包含非法内容'
+    if (checker.xss) {
+        const msg = checker.xss(body.content)
+        if (msg) return msg
+    }
+    if (checker.content) {
+        const msg = checker.content(body.content)
+        if (msg) return msg
+    }
     return true
 }
 

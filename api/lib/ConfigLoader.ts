@@ -1,20 +1,21 @@
 import {CheckResult} from 'fast-html-checker'
+import * as HTMLChecker from 'fast-html-checker'
 import path from 'path'
 
 let loaded: KmentsConfig
 
 /** 加载配置 */
-export async function loadConfig(): Promise<KmentsConfig> {
+export function loadConfig(): KmentsConfig {
     if (!loaded) {
         const configPath = path.resolve('.', `kmentsConfig.ts`)
-        loaded = await loadConfigFrom(configPath)
+        loaded = loadConfigFrom(configPath)
     }
     return loaded
 }
 
 /** 从指定路径下加载配置 */
-export async function loadConfigFrom(path: string): Promise<KmentsConfig> {
-    const config = await import(path)
+export function loadConfigFrom(path: string): KmentsConfig {
+    const config = require(path)
     for (let key of mustKeys) {
         if (!(key in config))
             throw `用户配置缺失 ${key} 字段`
@@ -60,26 +61,11 @@ function initEnv(config: any) {
     }
 }
 
-// noinspection JSUnusedGlobalSymbols
-const defaultConfig = {
-    commentChecker: {
-        user: (name: string, email: string, link?: string) => {
-            const nameBlackList = ['节点', '免费', '机场', 'clash']
-            if (nameBlackList.find(it => name.includes(it)))
-                return '用户名包含非法内容'
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-                return '邮箱无效'
-            if (link && /^(https?:\/\/|\/\/)?k?github\.com/i.test(link))
-                return '用户主页地址被屏蔽'
-            return undefined
-        }
-    }
-}
-
-export type RateLimitKeys = 'base'
+export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post'
 const mustKeys = ['domUrl']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
+    commentChecker: CommentChecker
     /** 环境变量 */
     env: {
         adminPassword: string
@@ -107,19 +93,21 @@ export interface KmentsConfigTemplate {
      *
      * 当检查通过时返回 undefined，检查失败返回字符串标明失败原因
      */
-    commentChecker?: {
-        /**
-         * 用户检查器
-         * @param name 用户名
-         * @param email 用户邮箱
-         * @param link 用户主页地址
-         */
-        user?: (name: string, email: string, link?: string) => CheckResult
-        /** 评论体检查器 */
-        content?: (content: string) => CheckResult
-        /** 评论体 XSS 安全检查器 */
-        xss?: (content: string) => CheckResult
-    }
+    commentChecker?: CommentChecker
+}
+
+export interface CommentChecker {
+    /**
+     * 用户检查器
+     * @param name 用户名
+     * @param email 用户邮箱
+     * @param link 用户主页地址
+     */
+    user?: (name: string, email: string, link?: string) => CheckResult
+    /** 评论体检查器 */
+    content?: (content: string) => CheckResult
+    /** 评论体 XSS 安全检查器 */
+    xss?: (content: string) => CheckResult
 }
 
 export interface RateLimitExp {
@@ -133,4 +121,23 @@ export interface RateLimitExp {
      * + [2] - 表示触发该等级限制后黑名单时间（-2 表示永久，-1 表示跟随 Serverless Function 的声明周期，0 表示不启用黑名单，单位 s）
      */
     level: ([number, number, number])[]
+}
+
+// noinspection JSUnusedGlobalSymbols
+const defaultConfig = {
+    commentChecker: {
+        user: (name: string, email: string, link?: string): CheckResult => {
+            const nameBlackList = ['节点', '免费', '机场', 'clash']
+            if (nameBlackList.find(it => name.includes(it)))
+                return '用户名包含非法内容'
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+                return '邮箱无效'
+            if (link && /^(https?:\/\/|\/\/)?k?github\.com/i.test(link))
+                return '用户主页地址被屏蔽'
+            return undefined
+        },
+        xss: (content: string): CheckResult => HTMLChecker.check(content, {
+            allowTags: ['a']
+        })
+    }
 }

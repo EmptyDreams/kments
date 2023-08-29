@@ -16,7 +16,11 @@ import {initRequest, connectDatabase} from './lib/utils'
  * + `len`: 获取的评论数量（缺省 10）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, {allows: 'all'}, 'GET')
+    const checkResult = await initRequest(
+        request, response,
+        'gets', {allows: 'all'},
+        'GET'
+    )
     if (!checkResult) return
     // 提取和检查请求参数信息
     const info = extractInfo(request)
