@@ -3,7 +3,7 @@ import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {sendReplyTo} from './lib/Email'
+import {CommentReplyEmailInfo, sendReplyTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest} from './lib/utils'
 
@@ -78,8 +78,35 @@ async function pushNewCommentToRedis(pageId: string, body: CommentBody) {
 async function reply(collection: Collection<CommentBody>, body: CommentBody, title: string, url: string) {
     let {reply, at} = body
     if (!reply) return
-    await Promise.all([
-        collection.findOneAndUpdate({
+    const emailInfo = {
+        content: body.content,
+        email: body.emailMd5,
+        name: body.name,
+        page: title,
+        pageUrl: new URL(url),
+        reply: new URL(url)
+    }
+    if (at) {
+        const idList = at.map(it => new ObjectId(it))
+        await Promise.all([
+            collection.find(
+                {_id: {$in: idList}},
+                {projection: {email: true, emailMd5: true, content: true}}
+            ).toArray().then(list => Promise.all(
+                list.map(comment => sendReplyTo(comment.email, {
+                    rawContent: comment.content,
+                    ...emailInfo
+                }))
+            )),
+            collection.updateMany({
+                _id: {$in: idList}
+            }, {
+                // @ts-ignore
+                $push: { children: reply }
+            })
+        ])
+    } else {
+        await collection.findOneAndUpdate({
             _id: new ObjectId(reply)
         }, {
             $inc: { subCount: 1},
@@ -89,26 +116,15 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             if ('email' in comment && 'content' in comment) {
                 const email = comment.email as string
                 return sendReplyTo(email, {
-                    content: body.content,
-                    rawContent: body.content,
-                    email: body.emailMd5,
-                    name: body.name,
-                    page: title,
-                    pageUrl: new URL(url),
-                    reply: new URL(url)
+                    rawContent: comment.content as string,
+                    ...emailInfo
                 }).catch(err => {
                     console.error('评论邮件通知发送失败')
                     console.error(err)
                 })
             }
-        }),
-        at ? collection.updateMany({
-            _id: {$in: at.map(it => new ObjectId(it))}
-        }, {
-            // @ts-ignore
-            $push: { children: reply }
-        }) : Promise.resolve()
-    ])
+        })
+    }
 }
 
 /** 从请求中提取评论信息 */
