@@ -27,8 +27,6 @@ export default async function (request: VercelRequest, response: VercelResponse)
     if ('login-id' in cookies)
         return response.status(200).json({status: 304})
     const domain = isDev ? 'localhost' : config.domUrl.host
-    const createCookie = (name: string, value: string, validity: number) =>
-        `${name}=${value}; Max-Age=${validity}; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`
     const email = body.email as string
     if (!('email' in body)) return response.status(200).json({
         status: 400,
@@ -53,7 +51,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
             }),
             connectRedis().del(redisKey)
         ])
-        response.setHeader('Set-Cookie', createCookie('kments-login-code', realId, 2592000))
+        response.setHeader(
+            'Set-Cookie',
+            `kments-login-code="${realId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`
+        )
         response.status(200).json({status: 200})
     } else {
         if (await connectRedis().exists(redisKey))

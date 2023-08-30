@@ -89,7 +89,7 @@ function initEnv(config: any) {
     }
 }
 
-export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login'
+export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logout'
 const mustKeys = ['domUrl']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
