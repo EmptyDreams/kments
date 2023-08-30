@@ -1,4 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
+import {connectDatabase} from './lib/DatabaseOperator'
+import {sendAuthCodeTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest, isDev} from './lib/utils'
 
@@ -32,16 +34,25 @@ export default async function (request: VercelRequest, response: VercelResponse)
         status: 400,
         msg: '缺少 email 字段'
     })
+    if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email))
+        return response.status(200).json({
+            status: 422,
+            msg: '邮箱格式错误'
+        })
     const redisKey = `login-code-${email}`
     if ('code' in body) {
         const realCode = await connectRedis().get(redisKey)
         if (body.code != realCode)
             return response.status(200).json({status: 403})
         const realId = calcHash('md5', `login-code-${Date.now()}-${email}`)
-        await connectRedis().pipeline()
-            .del(redisKey)
-            .setex(`login-id-${email}`, 2592000, realId)
-            .exec()
+        await Promise.all([
+            connectDatabase().then(async db => {
+                const collection = db.collection('login-verify')
+                await collection.deleteOne({email: email})
+                await collection.insertOne({email, verify: realId})
+            }),
+            connectRedis().del(redisKey)
+        ])
         response.setHeader('Set-Cookie', createCookie('kments-login-code', realId, 2592000))
         response.status(200).json({status: 200})
     } else {
@@ -52,6 +63,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             })
         const code = generateCode(6)
         await connectRedis().setex(redisKey, 600, code)
+        await sendAuthCodeTo(email, {code, msg: '身份认证'})
         response.status(200).json({status: 200})
     }
 }
@@ -62,4 +74,31 @@ function generateCode(length: number): string {
         result += Math.floor(Math.random() * 16).toString(16)
     }
     return result
+}
+
+/** 验证用户是否是指定用户 */
+export async function verifyAuth(request: VercelRequest, email: string): Promise<boolean> {
+    const cookies = request.cookies
+    if (!('kments-login-code' in cookies)) return false
+    const db = await connectDatabase()
+    const collection = db.collection('login-verify')
+    const doc = await collection.findOne({
+        email: email
+    }, {projection: {verify: true}})
+    if (!(doc && 'verify' in doc)) return false
+    return doc.verify == cookies['kments-login-code']
+}
+
+/** 获取当前用户的邮箱 */
+export async function getAuthEmail(request: VercelRequest): Promise<string | undefined> {
+    const cookies = request.cookies
+    if (!('kments-login-code' in cookies)) return undefined
+    const db = await connectDatabase()
+    const collection = db.collection('login-verify')
+    const doc = await collection.findOne(
+        {verify: cookies['kments-login-code']},
+        {projection: {email: true}}
+    )
+    if (!(doc && 'email' in doc)) return undefined
+    return doc.email
 }
