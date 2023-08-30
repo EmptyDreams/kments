@@ -85,12 +85,13 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             $inc: { subCount: 1},
             // @ts-ignore
             $push: { children: reply }
-        }, {projection: {email: true}}).then(comment => {
-            if ('email' in comment) {
+        }, {projection: {email: true, emailMd5: true, content: true}}).then(comment => {
+            if ('email' in comment && 'content' in comment) {
                 const email = comment.email as string
                 return sendReplyTo(email, {
                     content: body.content,
-                    email: email,
+                    rawContent: body.content,
+                    email: body.emailMd5,
                     name: body.name,
                     page: title,
                     pageUrl: new URL(url),

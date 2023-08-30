@@ -92,6 +92,8 @@ export interface CommentReplyEmailInfo {
     pageUrl: URL
     /** 对方的评论内容 */
     content: string
+    /** 被回复的评论的内容 */
+    rawContent: string
     /** 回复地址 */
     reply: URL
 }

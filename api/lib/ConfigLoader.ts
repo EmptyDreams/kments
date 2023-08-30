@@ -119,6 +119,8 @@ export interface KmentsConfig extends KmentsConfigTemplate {
 export interface KmentsConfigTemplate {
     /** 前端的 URL */
     domUrl: URL
+    /** 网站名称 */
+    siteTitle: string
     email?: EmailBasicConfig
     /** 评论通知邮箱配置 */
     replyEmail?: EmailConfig<CommentReplyEmailInfo>
