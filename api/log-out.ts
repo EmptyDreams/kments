@@ -3,6 +3,12 @@ import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {initRequest, isDev} from './lib/utils'
 
+// noinspection JSUnusedGlobalSymbols
+/**
+ * 退出登录
+ *
+ * 请求方法：POST (none body)
+ */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
         request, response,
