@@ -3,7 +3,7 @@ import {Collection, ObjectId, Document} from 'mongodb'
 import {extractReturnDate} from './get-comments'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {CommentReplyEmailInfo, sendReplyTo} from './lib/Email'
+import {sendReplyTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest} from './lib/utils'
 
@@ -92,12 +92,19 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             collection.find(
                 {_id: {$in: idList}},
                 {projection: {email: true, emailMd5: true, content: true}}
-            ).toArray().then(list => Promise.all(
-                list.map(comment => sendReplyTo(comment.email, {
-                    rawContent: comment.content,
-                    ...emailInfo
-                }))
-            )),
+            ).toArray().then(list => {
+                const set = new Set<string>()
+                return Promise.all(
+                    list.filter(it => {
+                        if (set.has(it.email)) return false
+                        set.add(it.email)
+                        return true
+                    }).map(comment => sendReplyTo(comment.email, {
+                        rawContent: comment.content,
+                        ...emailInfo
+                    }))
+                )
+            }),
             collection.updateMany({
                 _id: {$in: idList}
             }, {
