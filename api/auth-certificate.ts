@@ -76,7 +76,7 @@ function generateCode(length: number): string {
     for (let i = 0; i != length; ++i) {
         result += Math.floor(Math.random() * 16).toString(16)
     }
-    return result
+    return result.toUpperCase()
 }
 
 /** 验证用户是否是指定用户 */
