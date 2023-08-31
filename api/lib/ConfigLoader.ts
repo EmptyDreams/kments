@@ -16,7 +16,7 @@ export function loadConfig(): KmentsConfig {
 
 /** 从指定路径下加载配置 */
 export function loadConfigFrom(path: string): KmentsConfig {
-    const config = require(path)
+    const config = require(path).default
     for (let key of mustKeys) {
         if (!(key in config))
             throw `用户配置缺失 ${key} 字段`
@@ -83,7 +83,7 @@ function initEnv(config: any) {
             host: process.env['REDIS_HOST'],
             port: Number.parseInt(process.env['REDIS_PORT']!),
             password: process.env['REDIS_PASSWORD'],
-            tls: Number.parseInt(process.env['REDIS_TLS']!)
+            tls: !!Number.parseInt(process.env['REDIS_TLS']!)
         }
     }
 }

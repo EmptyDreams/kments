@@ -12,20 +12,21 @@ export function connectRedis(): Redis {
     }
     const helper = () => {
         const env = loadConfig().env.redis
+        const tlsOptional = env.tls ? {} : {
+            tls: {
+                rejectUnauthorized: false
+            }
+        }
         if (env.url) {
             return new Redis(env.url, {
-                tls: {
-                    rejectUnauthorized: env.tls
-                }, ...optional
+                ...tlsOptional, ...optional
             })
         } else if (env.host) {
             return new Redis({
                 host: env.host,
                 port: env.port,
                 password: env.password,
-                tls: {
-                    rejectUnauthorized: env.tls
-                },
+                ...tlsOptional,
                 ...optional
             })
         }
