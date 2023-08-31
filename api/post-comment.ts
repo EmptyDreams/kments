@@ -6,6 +6,7 @@ import {connectDatabase} from './lib/DatabaseOperator'
 import {sendReplyTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, initRequest} from './lib/utils'
+import * as HTMLParser from 'fast-html-parser'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -82,7 +83,8 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
         newly: {
             name: body.name,
             email: body.emailMd5,
-            content: body.content
+            content: body.content,
+            rawText: HTMLParser.parse(body.content).text
         },
         page: title,
         pageUrl: new URL(url),
@@ -103,9 +105,10 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                         return true
                     }).map(comment => sendReplyTo(comment.email, {
                         replied: {
-                           name: comment.name,
-                           email: comment.emailMd5,
-                           content: comment.content
+                            name: comment.name,
+                            email: comment.emailMd5,
+                            content: comment.content,
+                            rawText: HTMLParser.parse(comment.content).text
                         }, ...emailInfo
                     }))
                 )
@@ -124,28 +127,23 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             $inc: { subCount: 1},
             // @ts-ignore
             $push: { children: reply }
-        }, {projection: {name: true, email: true, emailMd5: true, content: true}}).then(comment => {
-            const list = ['name', 'email', 'emailMd5', 'content']
-            for (let key of list) {
-                if (!(key in comment)) {
-                    console.error(`发送邮件失败，缺失 ${key} 值。`)
-                    return
-                }
-            }
-            // @ts-ignore
-            return sendReplyTo(comment.email as string, {
-                replied: {
-                    // @ts-ignore
-                    name: comment.name,
-                    // @ts-ignore
-                    email: comment.emailMd5,
-                    // @ts-ignore
-                    content: comment.content
-                }, ...emailInfo
-            }).catch(err => {
+        }, {
+            projection: {name: true, email: true, emailMd5: true, content: true}}
+        ).then(async (body: any) => {
+            const comment = body as CommentBody
+            try {
+                return await sendReplyTo(comment.email as string, {
+                    replied: {
+                        name: comment.name,
+                        email: comment.emailMd5,
+                        content: comment.content,
+                        rawText: HTMLParser.parse(comment.content).text
+                    }, ...emailInfo
+                })
+            } catch (err) {
                 console.error('评论邮件通知发送失败')
                 console.error(err)
-            })
+            }
         })
     }
 }

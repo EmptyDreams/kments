@@ -1,6 +1,5 @@
 import * as HTMLChecker from 'fast-html-checker'
 import {CheckResult} from 'fast-html-checker'
-import * as HTMLParser from 'fast-html-parser'
 import path from 'path'
 import {AuthCodeEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
 
@@ -183,9 +182,9 @@ const defaultConfig = {
     replyEmail: {
         text: (info: CommentReplyEmailInfo): string =>
             `您在 ${loadConfig().siteTitle} 发布的评论：\n` +
-            `${HTMLParser.parse(info.replied.content).text}\n` +
+            `${info.replied.rawText}\n` +
             `收到了来自 ${info.newly.name} 的回复：\n` +
-            `${HTMLParser.parse(info.newly.content).text}\n` +
+            `${info.newly.rawText}\n` +
             `-~~-~~-~~-~~-~~-~~-~~-~~-~~-\n` +
             `如需回复，请前往 ${info.reply.href} (￣▽￣)"\n` +
             `请勿转发该邮件，这可能导致他人以您的身份发布评论！`,

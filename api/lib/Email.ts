@@ -87,6 +87,8 @@ interface CommentBodyInfo {
     email: string
     /** 评论内容（HTML） */
     content: string
+    /** 评论内容的 text 形式 */
+    rawText: string
 }
 
 /** 评论回复信息 */
