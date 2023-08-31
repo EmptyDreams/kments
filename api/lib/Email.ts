@@ -22,7 +22,7 @@ export async function sendAuthCodeTo(to: string, info: AuthCodeEmailInfo) {
 
 /** 发送任意邮件 */
 export async function sendTo<T>(to: string, config: EmailConfig<T>, info: T) {
-    const transporter = initTransporter()
+    const transporter = initTransporter(config)
     if (!transporter) return false
     return transporter.sendMail({
         from: `${config.name} <${config.fromEmail ?? config.user}>`,
@@ -31,10 +31,10 @@ export async function sendTo<T>(to: string, config: EmailConfig<T>, info: T) {
         text: config.text?.(info),
         html: config.html?.(info),
         amp: config.amp?.(info)
-    })
+    }).finally(() => transporter.close())
 }
 
-function initTransporter(config?: EmailConfig<any>): Transporter<SMTPTransport.SentMessageInfo> | undefined {
+function initTransporter(config: EmailConfig<any>): Transporter<SMTPTransport.SentMessageInfo> | undefined {
     if (!config) return undefined
     let optional: SMTPTransport.Options = config.service == 'SMTP' ? {
         host: config.host,
@@ -53,13 +53,13 @@ function initTransporter(config?: EmailConfig<any>): Transporter<SMTPTransport.S
 
 export interface EmailBasicConfig {
     /** 服务类型 */
-    service: 'Gmail' | 'Hotmail' | 'Outlook' | 'Yahoo' | 'QQ' | 'Zoho' | 'SMTP'
+    service?: 'Gmail' | 'Hotmail' | 'Outlook' | 'Yahoo' | 'QQ' | 'Zoho' | 'SMTP'
     /** 用户名（通常为邮箱地址） */
-    user: string
+    user?: string
     /** 邮件标题 */
-    title: string
+    title?: string
     /** 发件人姓名 */
-    name: string
+    name?: string
     /** 邮箱地址，留空表明同用户名 */
     fromEmail?: string
     /** SMTP 服务域名 */

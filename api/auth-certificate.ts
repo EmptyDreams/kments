@@ -64,8 +64,9 @@ export default async function (request: VercelRequest, response: VercelResponse)
                 msg: '请求发送验证码过于频繁'
             })
         const code = generateCode(6)
-        await connectRedis().setex(redisKey, 60, code)
-        await sendAuthCodeTo(email, {code, msg: '身份认证', name: body.name})
+        const sendResult = await sendAuthCodeTo(email, {code, msg: '身份认证', name: body.name})
+        if (!sendResult) return response.status(200).json({status: 500})
+        await connectRedis().setex(redisKey, 10, code)
         response.status(200).json({status: 200})
     }
 }

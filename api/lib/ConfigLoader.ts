@@ -37,21 +37,20 @@ export function loadConfigFrom(path: string): KmentsConfig {
 }
 
 function initEmail(config: any) {
+    if (!('replyEmail' in config)) config.replyEmail = {}
+    if (!('authCodeEmail' in config)) config.authCodeEmail = {}
     const {email, replyEmail, authCodeEmail} = config
-    if (email) {
-        for (let key in email) {
-            const value = email[key]
-            if (replyEmail && !(key in replyEmail)) replyEmail[key] = value
-            if (authCodeEmail && !(key in authCodeEmail)) authCodeEmail[key] = value
-        }
+    if (!email) return
+    for (let key in email) {
+        const value = email[key]
+        if (!(key in replyEmail)) replyEmail[key] = value
+        if (!(key in authCodeEmail)) authCodeEmail[key] = value
     }
     if (replyEmail?.password || authCodeEmail?.password)
         throw '用户禁止在 TS 配置中填写邮箱配置中的密码字段！'
     const passwords = config.env.emailPassword
-    if (replyEmail)
-        replyEmail.password = passwords.reply
-    if (authCodeEmail)
-        authCodeEmail.password = passwords.authCode
+    replyEmail.password = passwords.reply
+    authCodeEmail.password = passwords.authCode
 }
 
 function initEnv(config: any) {
