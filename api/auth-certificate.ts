@@ -74,7 +74,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
 function generateCode(length: number): string {
     let result = ''
     for (let i = 0; i != length; ++i) {
-        result += Math.floor(Math.random() * 16).toString(16)
+        result += Math.floor(Math.random() * 36).toString(36)
     }
     return result.toUpperCase()
 }
