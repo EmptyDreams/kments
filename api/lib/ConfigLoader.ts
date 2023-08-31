@@ -182,8 +182,10 @@ const defaultConfig = {
     },
     replyEmail: {
         text: (info: CommentReplyEmailInfo): string =>
-            `${info.name} 回复了您的评论：\n` +
-            `${HTMLParser.parse(info.content).text}\n` +
+            `您在 ${loadConfig().siteTitle} 发布的评论：\n` +
+            `${HTMLParser.parse(info.replied.content).text}\n` +
+            `收到了来自 ${info.newly.name} 的回复：\n` +
+            `${HTMLParser.parse(info.newly.content).text}\n` +
             `-~~-~~-~~-~~-~~-~~-~~-~~-~~-\n` +
             `如需回复，请前往 ${info.reply.href} (￣▽￣)"\n` +
             `请勿转发该邮件，这可能导致他人以您的身份发布评论！`,
