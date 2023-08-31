@@ -66,7 +66,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         const code = generateCode(6)
         const sendResult = await sendAuthCodeTo(email, {code, msg: '身份认证', name: body.name})
         if (!sendResult) return response.status(200).json({status: 500})
-        await connectRedis().setex(redisKey, 10, code)
+        await connectRedis().setex(redisKey, 60, code)
         response.status(200).json({status: 200})
     }
 }
