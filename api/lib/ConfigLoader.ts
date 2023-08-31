@@ -196,6 +196,10 @@ const defaultConfig = {
             `您好！这是用于${info.msg}的验证码，请您接收：${info.code}\n` +
             `请勿将该验证码告知他人，以防您的个人信息泄露或身份被顶替！\n` +
             `如果您没有在本站（${loadConfig().domUrl}）进行${info.msg}，可能是由于有人误用您的邮箱或冒名顶替您的身份，您可以与我沟通协商解决。`,
-        html: (info: AuthCodeEmailInfo): string => ``       // TODO: 在这里写身份认证验证码的 HTML 内容
+        html: (info: AuthCodeEmailInfo): string => {
+            const siteTitle = loadConfig().siteTitle
+            const {code, msg, name} = info
+            return `<div style="text-align:center;width:90%;max-width:650px;border-radius:16px;border:1px solid #6cf;box-shadow:1px 2px 5px 3px #6cf;overflow:hidden;margin:10px auto"><strong style=display:block;width:100%;line-height:50px;background:#2196f3;color:#fff;font-weight:700;font-size:1.2rem>${siteTitle} - 验证码</strong><div style="text-align:left;padding:10px 25px"><p>亲爱的<strong>${name}</strong>：</p><p>这是您的用于${msg}的验证码，如果并非您本人操作请忽略该邮件：</p><div style=display:inline-block;text-align:center;width:100%><p style="display:inline-block;background:#2196f3;color:#fff;font-size:1.5rem;font-weight:700;padding:10px 24px 10px 30px;border-radius:10px;letter-spacing:6px;margin:5px 0">${code}</p></div><p>感谢您选择 ${siteTitle}。</p></div></div><p style=text-align:center;color:#778899;font-size:.8rem>此邮件由系统自动发送，请勿回复。<br>请勿将验证码告知他人。</p>`
+        }
     }
 }

@@ -12,6 +12,7 @@ import {calcHash, initRequest, isDev} from './lib/utils'
  *
  * 参数列表如下：
  *
+ * + name - 用户名（可选）
  * + email - 邮箱
  * + code - 验证码（可选）
  */
@@ -64,7 +65,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             })
         const code = generateCode(6)
         await connectRedis().setex(redisKey, 600, code)
-        await sendAuthCodeTo(email, {code, msg: '身份认证'})
+        await sendAuthCodeTo(email, {code, msg: '身份认证', name: body.name})
         response.status(200).json({status: 200})
     }
 }

@@ -107,6 +107,8 @@ export interface CommentReplyEmailInfo {
 
 /** 验证码发放信息 */
 export interface AuthCodeEmailInfo {
+    /** 用户名称 */
+    name: string
     /** 验证码 */
     code: string
     /** 验证码用途（将拼接为“用于 xxx 的验证码”） */
