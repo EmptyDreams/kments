@@ -80,20 +80,25 @@ export interface EmailConfig<T> extends EmailBasicConfig {
     password?: string
 }
 
+interface CommentBodyInfo {
+    /** 姓名 */
+    name: string
+    /** 邮箱 MD5 */
+    email: string
+    /** 评论内容（HTML） */
+    content: string
+}
+
 /** 评论回复信息 */
 export interface CommentReplyEmailInfo {
-    /** 对方的名称 */
-    name: string
-    /** 对方邮箱的 MD5 */
-    email: string
+    /** 被回复的评论的信息 */
+    replied: CommentBodyInfo
+    /** 新评论的内容 */
+    newly: CommentBodyInfo
     /** 评论所在页面的名称 */
     page: string
     /** 评论所在页面的 URL */
     pageUrl: URL
-    /** 对方的评论内容 */
-    content: string
-    /** 被回复的评论的内容 */
-    rawContent: string
     /** 回复地址 */
     reply: URL
 }

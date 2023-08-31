@@ -79,9 +79,11 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
     let {reply, at} = body
     if (!reply) return
     const emailInfo = {
-        content: body.content,
-        email: body.emailMd5,
-        name: body.name,
+        newly: {
+            name: body.name,
+            email: body.emailMd5,
+            content: body.content
+        },
         page: title,
         pageUrl: new URL(url),
         reply: new URL(url)
@@ -91,7 +93,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
         await Promise.all([
             collection.find(
                 {_id: {$in: idList}},
-                {projection: {email: true, emailMd5: true, content: true}}
+                {projection: {name: true, email: true, emailMd5: true, content: true}}
             ).toArray().then(list => {
                 const set = new Set<string>()
                 return Promise.all(
@@ -100,8 +102,11 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                         set.add(it.email)
                         return true
                     }).map(comment => sendReplyTo(comment.email, {
-                        rawContent: comment.content,
-                        ...emailInfo
+                        replied: {
+                           name: comment.name,
+                           email: comment.emailMd5,
+                           content: comment.content
+                        }, ...emailInfo
                     }))
                 )
             }),
@@ -119,17 +124,28 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             $inc: { subCount: 1},
             // @ts-ignore
             $push: { children: reply }
-        }, {projection: {email: true, emailMd5: true, content: true}}).then(comment => {
-            if ('email' in comment && 'content' in comment) {
-                const email = comment.email as string
-                return sendReplyTo(email, {
-                    rawContent: comment.content as string,
-                    ...emailInfo
-                }).catch(err => {
-                    console.error('评论邮件通知发送失败')
-                    console.error(err)
-                })
+        }, {projection: {name: true, email: true, emailMd5: true, content: true}}).then(comment => {
+            const list = ['name', 'email', 'emailMd5', 'content']
+            for (let key of list) {
+                if (!(key in comment)) {
+                    console.error(`发送邮件失败，缺失 ${key} 值。`)
+                    return
+                }
             }
+            // @ts-ignore
+            return sendReplyTo(comment.email as string, {
+                replied: {
+                    // @ts-ignore
+                    name: comment.name,
+                    // @ts-ignore
+                    email: comment.emailMd5,
+                    // @ts-ignore
+                    content: comment.content
+                }, ...emailInfo
+            }).catch(err => {
+                console.error('评论邮件通知发送失败')
+                console.error(err)
+            })
         })
     }
 }
