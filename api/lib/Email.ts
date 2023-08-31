@@ -12,16 +12,16 @@ let transporter: Transporter<SMTPTransport.SentMessageInfo>
  */
 export async function sendReplyTo(to: string, info: CommentReplyEmailInfo) {
     const config = loadConfig().replyEmail!
-    return sendTo(to, config, info)
+    return sendTo(to, config, info, 'normal')
 }
 
 export async function sendAuthCodeTo(to: string, info: AuthCodeEmailInfo) {
     const config = loadConfig().authCodeEmail!
-    return sendTo(to, config, info)
+    return sendTo(to, config, info, 'high')
 }
 
 /** 发送任意邮件 */
-export async function sendTo<T>(to: string, config: EmailConfig<T>, info: T) {
+export async function sendTo<T>(to: string, config: EmailConfig<T>, info: T, priority: 'high' | 'normal' | 'low') {
     const transporter = initTransporter(config)
     if (!transporter) return false
     return transporter.sendMail({
@@ -30,7 +30,8 @@ export async function sendTo<T>(to: string, config: EmailConfig<T>, info: T) {
         subject: config.title,
         text: config.text?.(info),
         html: config.html?.(info),
-        amp: config.amp?.(info)
+        amp: config.amp?.(info),
+        priority
     }).finally(() => transporter.close())
 }
 
