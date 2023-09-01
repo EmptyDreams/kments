@@ -23,6 +23,9 @@
     {"source": "/post-comment/", "destination": "/api/post-comment/"},
     {"source": "/get-recent-comments/", "destination": "/api/get-recent-comments/"},
     {"source": "/admin-certificate/", "destination": "/api/admin-certificate/"},
+    {"source": "/auth-certificate/", "destination": "/api/auth-certificate/"},
+    {"source": "/log-out/", "destination": "/api/log-out/"},
+    {"source": "/delete-comments/", "destination": "/api/delete-comments/"},
     {"source": "(\/$)", "destination": "/api/index/"}
   ],
   "redirects": [
