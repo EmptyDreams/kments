@@ -187,8 +187,13 @@ const defaultConfig = {
             `-~~-~~-~~-~~-~~-~~-~~-~~-~~-\n` +
             `如需回复，请前往 ${info.reply.href} (￣▽￣)"\n` +
             `请勿转发该邮件，这可能导致他人以您的身份发布评论！`,
-        html: (info: CommentReplyEmailInfo): string => ``,      // TODO: 在这里写评论通知的 HTML 内容，不需要最外部的 <html> 标签
-        amp: (info: CommentReplyEmailInfo): string => ``        // TODO: 在这里写评论通知的 AMP 内容，需要最外部的 <html> 标签
+        html: (info: CommentReplyEmailInfo): string => {
+            const siteTitle = loadConfig().siteTitle
+            const {replied, newly, pageUrl, page} = info
+            return `<div style=margin:auto;width:90%;max-width:600px><p style=text-align:center;font-size:1.25rem;font-weight:700;margin:0>${siteTitle} 评论通知</p><p style=text-align:center;color:#666;font-size:.85rem>你在 ${page} 中发布的评论有人回复了哟~</p><div style="border-radius:12px;border:1px solid #6cf;box-shadow:1px 2px 4px 2px #6cf;padding:15px 25px;width:100%;box-sizing:border-box"><div class=head><img src=https://cravatar.cn/avatar/${replied.email} alt=avatar> <strong>${replied.name}</strong></div><div style="margin:10px 0;word-break:break-word">${replied.rawText}</div><div style="width:100%;height:0;border:2px dashed #6f6f6f;margin-bottom:10px"></div><div class=head><img src=https://cravatar.cn/avatar/${newly.email} alt=avatar> <strong>${newly.name}</strong></div><div style="margin:10px 0;word-break:break-word">${newly.rawText}</div><div style=width:100%;text-align:center;margin-top:20px><a href=${pageUrl} target=_blank style="text-decoration:none;background:#57bd6a;color:#f5f5f5;font-size:1.1rem;font-weight:700;padding:8px 6px 8px 10px;letter-spacing:4px;border-radius:8px;transition:all .3s">查看详情</a></div></div><p style=text-align:center;font-size:.85rem;color:#6a6a6a>该邮件由系统自动发送，回复评论请前往站内进行回复，请勿回复邮件。<br><strong>邮件内部包含不可见的隐私信息，请勿将邮件转发给他人。</strong></p></div><style>.head{margin:10px 0;display:flex;align-items:center}.head img{width:30px;height:30px;border-radius:50%;margin-right:10px}a:hover{background:#5f75fd!important}</style>`
+        },
+        // TODO: 在这里写评论通知的 AMP 内容，需要最外部的 <html> 标签
+        // amp: (info: CommentReplyEmailInfo): string => ``
     },
     authCodeEmail: {
         text: (info: AuthCodeEmailInfo): string =>
@@ -198,7 +203,7 @@ const defaultConfig = {
         html: (info: AuthCodeEmailInfo): string => {
             const siteTitle = loadConfig().siteTitle
             const {code, msg, name} = info
-            return `<div style="text-align:center;width:90%;max-width:650px;border-radius:16px;border:1px solid #6cf;box-shadow:1px 2px 5px 3px #6cf;overflow:hidden;margin:10px auto"><strong style=display:block;width:100%;line-height:50px;background:#2196f3;color:#fff;font-weight:700;font-size:1.2rem>${siteTitle} - 验证码</strong><div style="text-align:left;padding:10px 25px"><p>亲爱的 <strong>${name}</strong>：</p><p>这是您的用于${msg}的验证码，如果并非您本人操作请忽略该邮件：</p><div style=display:inline-block;text-align:center;width:100%><p style="display:inline-block;background:#2196f3;color:#fff;font-size:1.5rem;font-weight:700;padding:10px 24px 10px 30px;border-radius:10px;letter-spacing:6px;margin:5px 0">${code}</p></div><p>感谢您选择 ${siteTitle}。</p></div></div><p style=text-align:center;color:#778899;font-size:.8rem>此邮件由系统自动发送，请勿回复。<br>请勿将验证码告知他人。</p>`
+            return `<div style="text-align:center;width:90%;max-width:625px;border-radius:16px;border:1px solid #6cf;box-shadow:1px 2px 4px 2px #6cf;overflow:hidden;margin:10px auto"><strong style=display:block;width:100%;line-height:50px;background:#2196f3;color:#fff;font-weight:700;font-size:1.2rem>${siteTitle} - 验证码</strong><div style="text-align:left;padding:10px 25px"><p>亲爱的 <strong>${name}</strong>：</p><p>这是您的用于${msg}的验证码，如果并非您本人操作请忽略该邮件：</p><div style=display:inline-block;text-align:center;width:100%><p style="display:inline-block;background:#2196f3;color:#fff;font-size:1.5rem;font-weight:700;padding:10px 24px 10px 30px;border-radius:10px;letter-spacing:6px;margin:5px 0">${code}</p></div><p>感谢您选择 ${siteTitle}。</p></div></div><p style=text-align:center;color:#778899;font-size:.8rem>此邮件由系统自动发送，请勿回复。<br>请勿将验证码告知他人。</p>`
         }
     }
 }
