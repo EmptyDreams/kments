@@ -174,9 +174,23 @@ const defaultConfig = {
                 return '用户主页地址被屏蔽'
             return undefined
         },
-        xss: (content: string): CheckResult => HTMLChecker.check(content, {
-            allowTags: ['a']
-        })
+        xss: (content: string): CheckResult => {
+            const common = ['class', 'id', 'type', 'title']
+            const batchKeys = [
+                'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'strong', 'b', 'em', 'ul', 'li', 'ol',
+                'blockquote', 'code', 'pre', 'hr', 'del', 'p'
+            ]
+            const batch: any[] = []
+            batchKeys.forEach(key => batch.push({name: key, allowAttrs: common}))
+            return HTMLChecker.check(content, {
+                allowTags: [
+                    {name: 'a', allowAttrs: [...common, 'href', 'tabindex', 'nick']},
+                    {name: 'img', allowAttrs: [...common, 'src']},
+                    ...batch
+                ]
+            })
+        }
     },
     replyEmail: {
         text: (info: CommentReplyEmailInfo): string =>
