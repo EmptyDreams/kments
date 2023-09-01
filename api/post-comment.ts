@@ -57,7 +57,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
     ]).then(() => {
         response.status(200).json({
             status: 200,
-            data: extractReturnDate(body)
+            data: {
+                id: body._id,
+                location: body.location
+            }
         })
     })
 }
