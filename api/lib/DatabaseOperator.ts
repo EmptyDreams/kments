@@ -9,7 +9,7 @@ export async function connectDatabase(): Promise<Db> {
     const config = loadConfig().env.mongodb
     // noinspection SpellCheckingInspection
     const client = new MongoClient(
-        `mongodb+srv://${config.name}:${config.name}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,
+        `mongodb+srv://${config.name}:${config.password}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,
         {compressors: ['zstd', 'zlib']}
     )
     db = client.db('kments')
