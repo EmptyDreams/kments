@@ -21,7 +21,7 @@ import * as HTMLParser from 'fast-html-parser'
  * + email: string - 发布人邮箱
  * + link: string - 发布人的主页（可选）
  * + content: string - 评论内容（HTML）
- * + pageTitle: string - 当前页面的名称（可选）
+ * + pageTitle: string - 当前页面的名称
  * + reply: string - 要回复的评论的 ID（可选）
  * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
  */
@@ -49,12 +49,11 @@ export default async function (request: VercelRequest, response: VercelResponse)
             message: commentChecked
         })
     }
-    const collectionName = `c-${pageId}`
-    const collection = (await connectDatabase()).collection<CommentBody>(collectionName)
+    const collection = (await connectDatabase()).collection<CommentBody>(pageId)
     Promise.all([
         collection.insertOne(body),
         reply(collection, body, pageTitle, pageUrl),
-        pushNewCommentToRedis(collectionName, body)
+        pushNewCommentToRedis(pageId, body)
     ]).then(() => {
         response.status(200).json({
             status: 200,
@@ -117,7 +116,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                 _id: {$in: idList}
             }, {
                 // @ts-ignore
-                $push: { children: reply }
+                $push: { children: body._id }
             })
         ])
     } else {
@@ -126,11 +125,11 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
         }, {
             $inc: { subCount: 1},
             // @ts-ignore
-            $push: { children: reply }
+            $push: { children: body._id }
         }, {
             projection: {name: true, email: true, emailMd5: true, content: true}}
-        ).then(async (body: any) => {
-            const comment = body as CommentBody
+        ).then(async body => {
+            const comment = body.value!
             try {
                 return await sendReplyTo(comment.email as string, {
                     replied: {
@@ -153,7 +152,7 @@ function extractInfo(
     request: VercelRequest, ip: string, location: string
 ): { body: CommentBody, pageId: string, pageTitle?: string, pageUrl: string } | { msg: string } {
     const json = request.body
-    const list = ['name', 'email', 'pageId', 'content']
+    const list = ['name', 'email', 'pageId', 'content', 'pageTitle']
     for (let key of list) {
         if (!(key in json))
             return {msg: `${key} 值缺失`}
@@ -173,7 +172,7 @@ function extractInfo(
         result.at = json.at
     return {
         body: result,
-        pageId: `c-${json['pageId']}`,
+        pageId: decodeURIComponent(`c-${json['pageId']}`),
         pageTitle: json.pageTitle,
         pageUrl: request.headers.referer ?? 'http://localhost.dev/'
     }
