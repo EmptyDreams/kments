@@ -49,7 +49,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             message: commentChecked
         })
     }
-    const collectionName = body.page!
+    const collectionName = `c-${pageId}`
     const collection = (await connectDatabase()).collection<CommentBody>(collectionName)
     Promise.all([
         collection.insertOne(body),
@@ -185,7 +185,7 @@ function extractInfo(
  */
 function checkComment(body: CommentBody, pageId: string): boolean | string {
     const banChars = ['.', '*']
-    if (banChars.find(it => body.page!.includes(it)))
+    if (banChars.find(it => pageId.includes(it)))
         return '页面 ID 不能包含英文句号和星号'
     if (pageId.length > 64)
         return '页面 ID 长度过长'
