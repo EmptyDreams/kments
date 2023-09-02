@@ -56,7 +56,10 @@ function initEmail(config: any) {
 function initEnv(config: any) {
     const emailPassword = process.env['EMAIL_PASSWORD']
     const env: any = config.env = {
-        adminPassword: process.env['ADMIN_PASSWORD'],
+        admin: {
+            email: process.env['ADMIN_EMAIL'],
+            password: process.env['ADMIN_PASSWORD']
+        },
         mongodb: {
             name: process.env['MONGODB_NAME'],
             password: process.env['MONGODB_PASSWORD']
@@ -94,7 +97,10 @@ export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
     /** 环境变量 */
     env: {
-        adminPassword: string
+        admin: {
+            email: string
+            password: string
+        }
         mongodb: {
             name: string,
             password: string

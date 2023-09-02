@@ -78,6 +78,7 @@ async function pushNewCommentToRedis(pageId: string, body: CommentBody) {
 async function reply(collection: Collection<CommentBody>, body: CommentBody, title: string, url: string) {
     let {reply, at} = body
     if (!reply) return
+    const config = loadConfig()
     const emailInfo = {
         newly: {
             name: body.name,
@@ -102,14 +103,17 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                         if (set.has(it.email)) return false
                         set.add(it.email)
                         return true
-                    }).map(comment => sendReplyTo(comment.email, {
-                        replied: {
-                            name: comment.name,
-                            email: comment.emailMd5,
-                            content: comment.content,
-                            rawText: HTMLParser.parse(comment.content).text
-                        }, ...emailInfo
-                    }))
+                    }).map(comment => {
+                        if (config.env.admin.email == comment.email) return
+                        return sendReplyTo(comment.email, {
+                            replied: {
+                                name: comment.name,
+                                email: comment.emailMd5,
+                                content: comment.content,
+                                rawText: HTMLParser.parse(comment.content).text
+                            }, ...emailInfo
+                        })
+                    })
                 )
             }),
             collection.updateMany({
@@ -130,6 +134,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             projection: {name: true, email: true, emailMd5: true, content: true}}
         ).then(async body => {
             const comment = body.value!
+            if (comment.email == config.env.admin.email) return
             try {
                 return await sendReplyTo(comment.email as string, {
                     replied: {
