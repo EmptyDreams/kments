@@ -2,6 +2,7 @@ import * as HTMLChecker from 'fast-html-checker'
 import {CheckResult} from 'fast-html-checker'
 import path from 'path'
 import {AuthCodeEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
+import {checkEmail} from './utils'
 
 let loaded: KmentsConfig
 
@@ -171,8 +172,6 @@ const defaultConfig = {
             const nameBlackList = ['节点', '免费', '机场', 'clash']
             if (nameBlackList.find(it => name.includes(it)))
                 return '用户名包含非法内容'
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-                return '邮箱无效'
             if (link && /^(https?:\/\/|\/\/)?k?github\.com/i.test(link))
                 return '用户主页地址被屏蔽'
             return undefined

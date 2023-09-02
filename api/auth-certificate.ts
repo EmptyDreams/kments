@@ -2,7 +2,7 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {sendAuthCodeTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
-import {calcHash, initRequest, isDev} from './lib/utils'
+import {calcHash, checkEmail, initRequest, isDev} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -31,7 +31,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         status: 400,
         msg: '缺少 email 字段'
     })
-    if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email))
+    if (!checkEmail(email))
         return response.status(200).json({
             status: 422,
             msg: '邮箱格式错误'

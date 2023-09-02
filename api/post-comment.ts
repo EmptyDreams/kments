@@ -4,7 +4,7 @@ import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {sendReplyTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
-import {calcHash, initRequest} from './lib/utils'
+import {calcHash, checkEmail, initRequest} from './lib/utils'
 import * as HTMLParser from 'fast-html-parser'
 
 // noinspection JSUnusedGlobalSymbols
@@ -188,6 +188,8 @@ function checkComment(body: CommentBody, pageId: string): boolean | string {
         return '页面 ID 不能包含英文句号和星号'
     if (pageId.length > 64)
         return '页面 ID 长度过长'
+    if (!checkEmail(body.email))
+        return '用户邮箱格式错误'
     const checker = loadConfig().commentChecker
     if (checker.user) {
         const msg = checker.user(body.name, body.email, body.link)

@@ -84,6 +84,11 @@ export function calcHash(name: string, content: string): string {
     return crypto.createHash(name).update(content).digest('hex')
 }
 
+/** 检测指定邮箱是否合法 */
+export function checkEmail(email: string): boolean {
+    return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)
+}
+
 export interface RequestInfo {
     ip: string,
     location?: string,
