@@ -7,6 +7,7 @@
 |           名称           | 含义              |         示例          | 是否必填 |
 |:----------------------:|:----------------|:-------------------:|:----:|
 |    `ADMIN_PASSWORD`    | 管理员密码           |     `123456789`     |  是   |
+|     `ADMIN_EMAIL`      | 管理员邮箱           |    `aaa@qq.com`     |  是   |
 |     `MONGODB_NAME`     | MongoDB 名称      |       `kmar`        |  是   |
 |   `MONGODB_PASSWORD`   | MongoDB 密码      |     `WuLaWuLa`      |  是   |
 |        `KV_URL`        | Vercel KV 的 URL |  Vercel KV 启用后自动设置  |  否   |
