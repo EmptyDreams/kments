@@ -161,7 +161,7 @@ function extractInfo(
         _id: new ObjectId(),
         name: json.name,
         email: json.email,
-        emailMd5: calcHash('md5', json.email),
+        emailMd5: calcHash('md5', json.email.toLowerCase()),
         link: json.link,
         ip, location,
         content: json.content
