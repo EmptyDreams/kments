@@ -99,7 +99,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
     let {reply, at} = body
     if (!reply) return
     const config = loadConfig()
-    const emailInfo = {
+    const emailInfo = () => ({
         newly: {
             name: body.name,
             email: body.emailMd5,
@@ -109,7 +109,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
         page: title,
         pageUrl: new URL(url),
         reply: new URL(url)
-    }
+    })
     if (at) {
         const idList = at.map(it => new ObjectId(it))
         await Promise.all([
@@ -131,7 +131,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                                 email: comment.emailMd5,
                                 content: comment.content,
                                 rawText: HTMLParser.parse(comment.content).text
-                            }, ...emailInfo
+                            }, ...emailInfo()
                         })
                     })
                 )
@@ -162,7 +162,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                         email: comment.emailMd5,
                         content: comment.content,
                         rawText: HTMLParser.parse(comment.content).text
-                    }, ...emailInfo
+                    }, ...emailInfo()
                 })
             } catch (err) {
                 console.error('评论邮件通知发送失败')
