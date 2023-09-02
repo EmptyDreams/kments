@@ -50,8 +50,7 @@ export async function rateLimit(key: RateLimitKeys, ip: string, config: KmentsCo
         return [429, -1]
     }
     if (remoteBlackCheck![1][1]) return [429, -1]
-    const limit = config.rateLimit?.[key]
-    if (!limit) return [200, -1]
+    const limit = config.rateLimit![key]
     const count = await ipCount(key, ip, limit.cycle)
     for (let level of limit.level) {
         if (count < level[0]) continue
