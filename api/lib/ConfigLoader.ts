@@ -2,7 +2,6 @@ import * as HTMLChecker from 'fast-html-checker'
 import {CheckResult} from 'fast-html-checker'
 import path from 'path'
 import {AuthCodeEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
-import {checkEmail} from './utils'
 
 let loaded: KmentsConfig
 
@@ -170,10 +169,18 @@ const defaultConfig = {
     commentChecker: {
         user: (name: string, email: string, link?: string): CheckResult => {
             const nameBlackList = ['节点', '免费', '机场', 'clash']
+            const emailBlackList = [
+                'us.to', 'eu.org', 'tk', 'ml', 'ga', 'cf',
+                'gq', 'nom.za', 'iz.rs', 'ze.cs', 'zik.dj',
+                'slx.nl', 'ipq.co', 'biz.ly'
+            ]
             if (nameBlackList.find(it => name.includes(it)))
                 return '用户名包含非法内容'
             if (link && /^(https?:\/\/|\/\/)?k?github\.com/i.test(link))
                 return '用户主页地址被屏蔽'
+            email = email.toLowerCase()
+            if (emailBlackList.find(it => email.endsWith(it)))
+                return '用户邮箱被屏蔽'
             return undefined
         },
         xss: (content: string): CheckResult => {
