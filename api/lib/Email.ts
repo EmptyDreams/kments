@@ -3,8 +3,6 @@ import {Transporter} from 'nodemailer'
 import SMTPTransport from 'nodemailer/lib/smtp-transport'
 import {loadConfig} from './ConfigLoader'
 
-let transporter: Transporter<SMTPTransport.SentMessageInfo>
-
 /** 发送评论信息到博主邮箱 */
 export async function sendNotice(info: CommentPostEmailInfo) {
     const config = loadConfig()
@@ -49,14 +47,13 @@ function initTransporter(config: EmailConfig<any>): Transporter<SMTPTransport.Se
         port: config.port,
         secure: config.secure
     } : {service: config.service}
-    transporter = Nodemailer.createTransport({
+    return Nodemailer.createTransport({
         ...optional,
         auth: {
             user: config.user,
             pass: config.password!
         }
     })
-    return transporter
 }
 
 export interface EmailBasicConfig {

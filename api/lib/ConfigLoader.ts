@@ -37,20 +37,22 @@ export function loadConfigFrom(path: string): KmentsConfig {
 }
 
 function initEmail(config: any) {
-    if (!('replyEmail' in config)) config.replyEmail = {}
-    if (!('authCodeEmail' in config)) config.authCodeEmail = {}
-    const {email, replyEmail, authCodeEmail} = config
+    const keyList = ['replyEmail', 'authCodeEmail', 'noticeEmail']
+    for (let key of keyList) {
+        if (key in config) {
+            if ('password' in config[key])
+                throw '用户禁止在 TS 配置中填写邮箱配置中的密码字段！'
+        } else config[key] = {}
+        config[key].password = config.env.emailPassword[key.substring(0, key.length - 5)]
+    }
+    const {email} = config
     if (!email) return
     for (let key in email) {
         const value = email[key]
-        if (!(key in replyEmail)) replyEmail[key] = value
-        if (!(key in authCodeEmail)) authCodeEmail[key] = value
+        for (let item of keyList) {
+            if (!(key in config[item])) config[item][key] = value
+        }
     }
-    if (replyEmail?.password || authCodeEmail?.password)
-        throw '用户禁止在 TS 配置中填写邮箱配置中的密码字段！'
-    const passwords = config.env.emailPassword
-    replyEmail.password = passwords.reply
-    authCodeEmail.password = passwords.authCode
 }
 
 function initEnv(config: any) {
@@ -66,6 +68,7 @@ function initEnv(config: any) {
         },
         emailPassword: {
             email: emailPassword,
+            notice: process.env['EMAIL_PASSWORD_NOTICE'] ?? emailPassword,
             reply: process.env['EMAIL_PASSWORD_REPLY'] ?? emailPassword,
             authCode: process.env['EMAIL_PASSWORD_AUTH'] ?? emailPassword
         }
