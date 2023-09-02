@@ -104,7 +104,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                         set.add(it.email)
                         return true
                     }).map(comment => {
-                        if (config.env.admin.email == comment.email) return
+                        if (config.env.admin.email == comment.email || body.email == comment.email) return
                         return sendReplyTo(comment.email, {
                             replied: {
                                 name: comment.name,
@@ -132,9 +132,9 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             $push: { children: body._id }
         }, {
             projection: {name: true, email: true, emailMd5: true, content: true}}
-        ).then(async body => {
-            const comment = body.value!
-            if (comment.email == config.env.admin.email) return
+        ).then(async modifyResult => {
+            const comment = modifyResult.value!
+            if (comment.email == config.env.admin.email || comment.email == body.email) return
             try {
                 return await sendReplyTo(comment.email as string, {
                     replied: {
