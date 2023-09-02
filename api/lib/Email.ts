@@ -5,6 +5,13 @@ import {loadConfig} from './ConfigLoader'
 
 let transporter: Transporter<SMTPTransport.SentMessageInfo>
 
+/** 发送评论信息到博主邮箱 */
+export async function sendNotice(info: CommentPostEmailInfo) {
+    const config = loadConfig()
+    const to = config.env.admin.email
+    return sendTo(to, config.noticeEmail!, info, 'normal')
+}
+
 /**
  * 发送评论通知邮件到指定邮箱
  * @param to 指定的邮箱
@@ -79,6 +86,14 @@ export interface EmailConfig<T> extends EmailBasicConfig {
     amp?: EmailContentBuilder<T>
     /** 密码，该项由系统自动填入，用户禁填 */
     password?: string
+}
+
+/** 评论发布信息 */
+export interface CommentPostEmailInfo {
+    body: CommentBodyInfo
+    page: string
+    pageUrl: URL
+    reply: URL
 }
 
 interface CommentBodyInfo {

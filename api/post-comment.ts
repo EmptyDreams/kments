@@ -2,7 +2,7 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, ObjectId, Document} from 'mongodb'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {sendReplyTo} from './lib/Email'
+import {sendNotice, sendReplyTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
 import {calcHash, checkEmail, initRequest} from './lib/utils'
 import * as HTMLParser from 'fast-html-parser'
@@ -50,7 +50,8 @@ export default async function (request: VercelRequest, response: VercelResponse)
     Promise.all([
         collection.insertOne(body),
         reply(collection, body, pageTitle, pageUrl),
-        pushNewCommentToRedis(pageId, body)
+        pushNewCommentToRedis(pageId, body),
+        noticeMaster(body, pageTitle, pageUrl)
     ]).then(() => {
         response.status(200).json({
             status: 200,
@@ -59,6 +60,25 @@ export default async function (request: VercelRequest, response: VercelResponse)
                 location: body.location
             }
         })
+    })
+}
+
+/** 发送评论通知到博主邮箱 */
+async function noticeMaster(body: CommentBody, title: string, url: string) {
+    const config = loadConfig()
+    const emailConfig = config.noticeEmail
+    const masterEmail = config.env.admin.email
+    if (!emailConfig || body.email == masterEmail) return
+    return sendNotice({
+        body: {
+            name: body.name,
+            email: body.emailMd5,
+            content: body.content,
+            rawText: HTMLParser.parse(body.content).text
+        },
+        page: title,
+        pageUrl: new URL(url),
+        reply: new URL(url)
     })
 }
 
