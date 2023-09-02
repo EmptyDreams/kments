@@ -88,7 +88,7 @@ function initEnv(config: any) {
 }
 
 export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logout'
-const mustKeys = ['domUrl']
+const mustKeys = ['domUrl', 'siteTitle']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
@@ -119,6 +119,7 @@ export interface KmentsConfigTemplate {
     domUrl: URL
     /** 网站名称 */
     siteTitle: string
+    /** 缺省的邮箱配置 */
     email?: EmailBasicConfig
     /** 评论通知邮箱配置 */
     replyEmail?: EmailConfig<CommentReplyEmailInfo>
@@ -150,7 +151,9 @@ export interface CommentChecker {
 
 export interface RateLimitExp {
     /** 统计周期（ms） */
-    cycle: number,
+    cycle: number
+    /** 访问地区限制 */
+    region: 'main' | 'china' | 'all' | 'none'
     /**
      * 限制等级，数组应该按照 [0] 的值从大到小排列
      *

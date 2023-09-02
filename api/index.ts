@@ -4,9 +4,7 @@ import {initRequest} from './lib/utils'
 // noinspection JSUnusedGlobalSymbols
 export default async function(request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response,
-        'base', {allows: 'china'},
-        'GET'
+        request, response, 'base', 'GET'
     )
     if (!checkResult) return
     const {ip, location, count} = checkResult

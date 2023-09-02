@@ -23,9 +23,7 @@ import {initRequest, rebuildRecentComments} from './lib/utils'
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response,
-        'admin', {allows: 'china'},
-        'DELETE'
+        request, response, 'admin', 'DELETE'
     )
     if (!checkResult) return
     const adminId = request.cookies.admin

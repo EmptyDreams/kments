@@ -18,9 +18,7 @@ import {calcHash, initRequest, isDev} from './lib/utils'
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response,
-        'login', {allows: 'china'},
-        'POST'
+        request, response, 'login', 'POST'
     )
     if (!checkResult) return
     const {config} = checkResult

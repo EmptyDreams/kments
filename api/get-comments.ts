@@ -18,9 +18,7 @@ import {initRequest} from './lib/utils'
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response,
-        'gets', {allows: 'all'},
-        'GET'
+        request, response, 'gets', 'GET'
     )
     if (!checkResult) return
     // 提取和检查请求参数信息

@@ -26,9 +26,7 @@ import * as HTMLParser from 'fast-html-parser'
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response,
-        'post', {allows: 'china'},
-        'POST'
+        request, response, 'post', 'POST'
     )
     if (!checkResult) return
     const {ip, location} = checkResult

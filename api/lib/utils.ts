@@ -85,13 +85,6 @@ export function calcHash(name: string, content: string): string {
     return crypto.createHash(name).update(content).digest('hex')
 }
 
-export interface RegionLimit {
-    /** 访问区域限制方法（中国大陆、中国、无限制） */
-    allows: 'main' | 'china' | 'all',
-    /** 是否允许未知地域的访问 */
-    allow_unknown?: boolean
-}
-
 export interface RequestInfo {
     ip: string,
     location?: string,
@@ -102,7 +95,7 @@ export interface RequestInfo {
 /** 对请求进行合法性检查 */
 export async function initRequest(
     request: VercelRequest, response: VercelResponse,
-    rateLimitKey: RateLimitKeys, regionLimit: RegionLimit, ...allowMethods: string[]
+    rateLimitKey: RateLimitKeys, ...allowMethods: string[]
 ): Promise<false | RequestInfo> {
     const config = loadConfig()
     if (isDev) {
@@ -130,38 +123,43 @@ export async function initRequest(
         return false
     }
     let location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
-    if (!location && !regionLimit.allow_unknown) {
-        response.status(200).json({
-            status: 403,
-            msg: '定位失败，禁止未知区域的用户访问'
-        })
-        return false
-    }
-    switch (regionLimit.allows) {
-        case "main":
-            if (!location || ['澳门', '香港', '台湾'].includes(location)) {
-                response.status(200).json({
-                    status: 403,
-                    msg: `仅允许大陆用户访问`
-                })
-                return false
-            }
-            break
-        case "china":
-            if (!location) {
-                response.status(200).json({
-                    status: 403,
-                    msg: '禁止国外用户访问'
-                })
-                return false
-            }
-            break
-    }
-    if (!location) location = '国外'
-    const [status, count] = await rateLimit(rateLimitKey, ip, config)
-    if (status != 200) {
-        response.status(status).end()
-        return false
+    const limitConfig = config.rateLimit?.[rateLimitKey]
+    let count = -1
+    if (limitConfig) {
+        if (!location && limitConfig.region != 'none') {
+            response.status(200).json({
+                status: 403,
+                msg: '定位失败，禁止未知区域的用户访问'
+            })
+            return false
+        }
+        switch (limitConfig.region) {
+            case "main":
+                if (!location || ['澳门', '香港', '台湾'].includes(location)) {
+                    response.status(200).json({
+                        status: 403,
+                        msg: `仅允许大陆用户访问`
+                    })
+                    return false
+                }
+                break
+            case "china":
+                if (!location) {
+                    response.status(200).json({
+                        status: 403,
+                        msg: '禁止国外用户访问'
+                    })
+                    return false
+                }
+                break
+        }
+        if (!location) location = '国外'
+        const [status, amount] = await rateLimit(rateLimitKey, ip, config)
+        if (status != 200) {
+            response.status(status).end()
+            return false
+        }
+        count = amount
     }
     response.setHeader('Access-Control-Allow-Origin', url)
     return {location, count, ip, config}

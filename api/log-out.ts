@@ -11,9 +11,7 @@ import {initRequest, isDev} from './lib/utils'
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response,
-        'logout', {allows: 'china'},
-        'POST'
+        request, response, 'logout', 'POST'
     )
     if (!checkResult) return
     const cookies = request.cookies
