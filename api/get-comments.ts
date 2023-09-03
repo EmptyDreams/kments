@@ -81,24 +81,34 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
 export function readCommentsFromDb(collection: Collection, filter: Filter<Document>) {
     return collection.find(filter, {
         projection: {
-            email: false,
-            ip: false,
-            children: false
+            _id: true,
+            name: true,
+            emailMd5: true,
+            link: true,
+            location: true,
+            content: true,
+            subCount: true,
+            hide: true
         }
     })
 }
 
 /** 提取返回给客户端的数据 */
 export function extractReturnDate(body: CommentBody): any {
-    return {
+    const result: any = {
         id: body._id.toString(),
         name: body.name,
         email: body.emailMd5,
         link: body.link || undefined,
         location: body.location,
         content: body.content,
-        subCount: body.subCount
+        subCount: body.subCount,
+        hide: body.hide
     }
+    for (let key in result) {
+        if (!result[key]) delete result[key]
+    }
+    return result
 }
 
 interface GetInfo {

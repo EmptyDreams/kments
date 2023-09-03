@@ -255,5 +255,7 @@ export interface CommentBody extends Document {
     /** 要 at 的评论 */
     at?: string[],
     /** 子评论列表 */
-    children?: string[]
+    children?: string[],
+    /** 是否是隐藏评论 */
+    hide?: boolean
 }
