@@ -16,7 +16,7 @@ import {initRequest} from './lib/utils'
  * + `id`: 页面唯一标识
  * + `start`: 起始下标（从零开始，缺省 0）
  * + `len`: 获取的评论数量（缺省 10）
- * + `truth`: 是否显示隐藏的评论，仅管理员身份有效（缺省 false）
+ * + `truth`: 是否显示隐藏的评论，仅管理员身份有效（缺省 0）[0-不显示，1-显示，2-只显示隐藏评论]
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
@@ -31,9 +31,23 @@ export default async function (request: VercelRequest, response: VercelResponse)
             msg: info
         })
     const defFilter = {reply: {$exists: false}}
-    const filter = info.truth ? defFilter : {
-        hide: {$exists: false},
-        ...defFilter
+    let filter
+    switch (info.truth) {
+        case 0:
+            filter = defFilter
+            break
+        case 1:
+            filter = {
+                hide: {$exists: false},
+                ...defFilter
+            }
+            break
+        case 2:
+            filter = {
+                hide: {$exists: true},
+                ...defFilter
+            }
+            break
     }
     const db = await connectDatabase()
     const list = await readCommentsFromDb(
@@ -52,12 +66,15 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
     if (!params.has('id')) return '缺少页面唯一标识符'
     const start = Number.parseInt(params.get('start') ?? '0')
     const len = Number.parseInt(params.get('len') ?? '10')
-    let truth = false
-    if (Boolean(params.get('truth') ?? ''))
-        truth = await verifyAdminStatus(request)
+    let truth = 0
+    const truthParam = params.get('truth')
+    if (truthParam == '1' || truthParam == '2') {
+        const isAdmin = await verifyAdminStatus(request)
+        if (isAdmin) truth = Number.parseInt(truthParam)
+    }
     return {
         id: `c-${params.get('id')}`,
-        start, len, truth
+        start, len, truth: truth as 0 | 1 | 2
     }
 }
 
@@ -92,5 +109,5 @@ interface GetInfo {
     /** 长度 */
     len: number,
     /** 是否显示隐藏评论 */
-    truth: boolean
+    truth: 0 | 1 | 2
 }
