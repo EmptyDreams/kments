@@ -24,7 +24,7 @@ import {initRequest, rebuildRecentComments} from './lib/utils'
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
-        request, response, 'admin', 'DELETE'
+        request, response, 'delete', 'DELETE'
     )
     if (!checkResult) return
     if (!await verifyAdminStatus(request)) return response.status(403).end()

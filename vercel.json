@@ -26,6 +26,7 @@
     {"source": "/auth-certificate/", "destination": "/api/auth-certificate/"},
     {"source": "/log-out/", "destination": "/api/log-out/"},
     {"source": "/delete-comments/", "destination": "/api/delete-comments/"},
+    {"source": "/hide-comments/", "destination": "/api/hide-comments/"},
     {"source": "(\/$)", "destination": "/api/index/"}
   ],
   "redirects": [
