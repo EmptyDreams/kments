@@ -1,5 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Db, ObjectId} from 'mongodb'
+import {verifyAdminStatus} from './admin-certificate'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {CommentBody} from './post-comment'
 import {connectRedis} from './lib/RedisOperator'
@@ -26,10 +27,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         request, response, 'admin', 'DELETE'
     )
     if (!checkResult) return
-    const adminId = request.cookies.admin
-    if (!adminId) return response.status(401).end()
-    const realId = await connectRedis().get('admin')
-    if (adminId != realId) return response.status(403).end()
+    if (!await verifyAdminStatus(request)) return response.status(403).end()
     const body = request.body
     const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
     const oldLength = recentComments.length

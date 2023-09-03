@@ -30,3 +30,12 @@ export default async function (request: VercelRequest, response: VercelResponse)
         status: 200
     })
 }
+
+/** 校验管理员身份 */
+export async function verifyAdminStatus(request: VercelRequest): Promise<boolean> {
+    const cookies = request.cookies
+    if (!('admin' in cookies)) return false
+    const value = cookies.admin
+    const realId = await connectRedis().get('admin')
+    return realId == value
+}
