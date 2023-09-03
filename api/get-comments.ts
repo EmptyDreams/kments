@@ -1,5 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
+import {verifyAdminStatus} from './admin-certificate'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {CommentBody} from './post-comment'
 import {initRequest} from './lib/utils'
@@ -15,6 +16,7 @@ import {initRequest} from './lib/utils'
  * + `id`: 页面唯一标识
  * + `start`: 起始下标（从零开始，缺省 0）
  * + `len`: 获取的评论数量（缺省 10）
+ * + `truth`: 是否显示隐藏的评论，仅管理员身份有效（缺省 false）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
@@ -22,15 +24,20 @@ export default async function (request: VercelRequest, response: VercelResponse)
     )
     if (!checkResult) return
     // 提取和检查请求参数信息
-    const info = extractInfo(request)
+    const info = await extractInfo(request)
     if (typeof info == 'string')
         return response.status(200).json({
             status: 400,
             msg: info
         })
+    const defFilter = {reply: {$exists: false}}
+    const filter = info.truth ? defFilter : {
+        hide: {$exists: false},
+        ...defFilter
+    }
     const db = await connectDatabase()
     const list = await readCommentsFromDb(
-        db.collection(info.id), {reply: {$exists: false}}
+        db.collection(info.id), filter
     ).skip(info.start).limit(info.len).toArray()
     response.status(200).json({
         status: 200,
@@ -38,16 +45,19 @@ export default async function (request: VercelRequest, response: VercelResponse)
     })
 }
 
-function extractInfo(request: VercelRequest): GetInfo | string {
+async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
     const searchString = request.url?.substring(request.url!.indexOf('?') + 1)
     if (!searchString) return '缺少 URL 信息'
     const params = new URLSearchParams(searchString)
     if (!params.has('id')) return '缺少页面唯一标识符'
     const start = Number.parseInt(params.get('start') ?? '0')
     const len = Number.parseInt(params.get('len') ?? '10')
+    let truth = false
+    if (Boolean(params.get('truth') ?? ''))
+        truth = await verifyAdminStatus(request)
     return {
         id: `c-${params.get('id')}`,
-        start, len
+        start, len, truth
     }
 }
 
@@ -80,5 +90,7 @@ interface GetInfo {
     /** 起始下标 */
     start: number,
     /** 长度 */
-    len: number
+    len: number,
+    /** 是否显示隐藏评论 */
+    truth: boolean
 }
