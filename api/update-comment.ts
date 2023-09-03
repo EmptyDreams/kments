@@ -45,7 +45,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         })
         const db = await connectDatabase()
         const commentId = new ObjectId(id)
-        const publishTime = commentId.getTimestamp().getTime()
+        const publishTime = Math.floor(commentId.getTimestamp().getTime() / 1000)
         const result = await db.collection(collectionName)
             .updateOne({
                     _id: {
