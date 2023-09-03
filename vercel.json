@@ -27,6 +27,7 @@
     {"source": "/log-out/", "destination": "/api/log-out/"},
     {"source": "/delete-comments/", "destination": "/api/delete-comments/"},
     {"source": "/hide-comments/", "destination": "/api/hide-comments/"},
+    {"source": "/update-comment/", "destination": "/api/update-comment/"},
     {"source": "(\/$)", "destination": "/api/index/"}
   ],
   "redirects": [

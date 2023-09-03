@@ -144,6 +144,8 @@ export interface KmentsConfigTemplate {
      * 当检查通过时返回 undefined，检查失败返回字符串标明失败原因
      */
     commentChecker?: CommentChecker
+    /** 非管理员用户评论修改时间限制（单位 s） */
+    commentUpdateTimeLimit?: number
 }
 
 export interface CommentChecker {
@@ -251,5 +253,6 @@ const defaultConfig = {
             const {code, msg, name} = info
             return `<div style="text-align:center;width:90%;max-width:625px;border-radius:16px;border:1px solid #6cf;box-shadow:1px 2px 4px 2px #6cf;overflow:hidden;margin:10px auto"><strong style=display:block;width:100%;line-height:50px;background:#2196f3;color:#fff;font-weight:700;font-size:1.2rem>${siteTitle} - 验证码</strong><div style="text-align:left;padding:10px 25px"><p>亲爱的 <strong>${name}</strong>：</p><p>这是您的用于${msg}的验证码，如果并非您本人操作请忽略该邮件：</p><div style=display:inline-block;text-align:center;width:100%><p style="display:inline-block;background:#2196f3;color:#fff;font-size:1.5rem;font-weight:700;padding:10px 24px 10px 30px;border-radius:10px;letter-spacing:6px;margin:5px 0">${code}</p></div><p>感谢您选择 ${siteTitle}。</p></div></div><p style=text-align:center;color:#778899;font-size:.8rem>此邮件由系统自动发送，请勿回复。<br>请勿将验证码告知他人。</p>`
         }
-    }
+    },
+    updateCommentTimeLimit: 5 * 60
 }

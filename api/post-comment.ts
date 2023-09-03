@@ -207,7 +207,7 @@ function extractInfo(
  * 检查评论是否可以发布
  * @return {boolean|string} 返回 true 表示可以，否则表示不可以
  */
-function checkComment(body: CommentBody, pageId: string): boolean | string {
+function checkComment(body: CommentBody, pageId: string): true | string {
     const banChars = ['.', '*']
     if (banChars.find(it => pageId.includes(it)))
         return '页面 ID 不能包含英文句号和星号'
