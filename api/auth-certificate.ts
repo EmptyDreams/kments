@@ -1,4 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
+import * as crypto from 'crypto'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {sendAuthCodeTo} from './lib/Email'
 import {connectRedis} from './lib/RedisOperator'
@@ -46,7 +47,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         const realCode = await connectRedis().get(redisKey)
         if (body.code != realCode)
             return response.status(200).json({status: 403})
-        const realId = calcHash('md5', `login-code-${Date.now()}-${email}`)
+        const realId = calcHash('md5', config.encrypt(`login-code-${Date.now()}-${email}`))
         await Promise.all([
             connectDatabase().then(async db => {
                 const collection = db.collection('login-verify')
@@ -77,7 +78,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
 function generateCode(length: number): string {
     let result = ''
     for (let i = 0; i != length; ++i) {
-        result += Math.floor(Math.random() * 36).toString(36)
+        result += crypto.randomInt(0, 36).toString(36)
     }
     return result.toUpperCase()
 }

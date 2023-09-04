@@ -94,7 +94,7 @@ function initEnv(config: any) {
 }
 
 export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logout' | 'delete' | 'hide' | 'count'
-const mustKeys = ['domUrl', 'siteTitle']
+const mustKeys = ['domUrl', 'siteTitle', 'encrypt']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
@@ -128,6 +128,8 @@ export interface KmentsConfigTemplate {
     domUrl: URL
     /** 网站名称 */
     siteTitle: string
+    /** 单向加密指定的字符串，必须保证同样的字符串加密出相同的内容 */
+    encrypt: (text: string) => string
     /** 缺省的邮箱配置 */
     email?: EmailBasicConfig
     /** 博主评论通知配置 */
