@@ -27,11 +27,13 @@ export default async function (request: VercelRequest, response: VercelResponse)
                 data: await redis.get(globalKey)
             })
         } else {
+            globalIpRecord.add(ip)
             response.status(200).json({
                 status: 200,
                 data: await redis.incr(globalKey)
             })
         }
+        return
     }
     const record = ipRecord.get(page)
     const key = `count:${page}`
@@ -53,6 +55,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             data: await redis.incr(key)
         })
     } else {
+        globalIpRecord.add(ip)
         const result = await redis.pipeline().incr(key).incr(globalKey).exec()
         if (!result) throw '未接受到返回值'
         let flag = false
@@ -65,7 +68,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         if (flag) throw '统计时发生错误'
         response.status(200).json({
             status: 200,
-            data: result[1][1]
+            data: result[0][1]
         })
     }
 }
