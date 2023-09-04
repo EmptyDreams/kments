@@ -29,6 +29,7 @@
     {"source": "/hide-comments/", "destination": "/api/hide-comments/"},
     {"source": "/update-comment/", "destination": "/api/update-comment/"},
     {"source": "/count-visit/", "destination": "/api/count-visit"},
+    {"source": "/get-pages-view/", "destination": "/api/get-pages-view/"},
     {"source": "(^\/$)", "destination": "/api/index/"}
   ],
   "redirects": [
