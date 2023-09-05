@@ -6,7 +6,7 @@ let db: Db
 /** 连接数据库 */
 export async function connectDatabase(): Promise<Db> {
     if (db) return db
-    const config = loadConfig().env.mongodb
+    const config = loadConfig().mongodb
     // noinspection SpellCheckingInspection
     const client = new MongoClient(
         `mongodb+srv://${config.name}:${config.password}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,

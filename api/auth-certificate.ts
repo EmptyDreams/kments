@@ -37,7 +37,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             status: 422,
             msg: '邮箱格式错误'
         })
-    if (email.toLowerCase() == config.env.admin.email.toLowerCase())
+    if (email.toLowerCase() == config.admin.email.toLowerCase())
         return response.status(200).json({
             status: 423,
             msg: '无权登录该邮箱'

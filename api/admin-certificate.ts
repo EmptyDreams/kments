@@ -15,7 +15,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     if (!checkResult) return
     const {config} = checkResult
     const password = request.body as string
-    if (password != config.env.admin.password) return response.status(200).json({
+    if (password != config.admin.password) return response.status(200).json({
         status: 403,
         msg: '密码错误'
     })

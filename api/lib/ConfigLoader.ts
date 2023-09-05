@@ -32,7 +32,6 @@ export function loadConfigFrom(path: string): KmentsConfig {
         }
     }
     merge(config, defaultConfig)
-    initEnv(config)
     initEmail(config)
     if (typeof config.encrypt == 'string') {
         const seed = config.encrypt as string
@@ -49,11 +48,7 @@ export function loadConfigFrom(path: string): KmentsConfig {
 function initEmail(config: any) {
     const keyList = ['replyEmail', 'authCodeEmail', 'noticeEmail']
     for (let key of keyList) {
-        if (key in config) {
-            if ('password' in config[key])
-                throw '用户禁止在 TS 配置中填写邮箱配置中的密码字段！'
-        } else config[key] = {}
-        config[key].password = config.env.emailPassword[key.substring(0, key.length - 5)]
+        if (!(key in config)) config[key] = {}
     }
     const {email} = config
     if (!email) return
@@ -65,73 +60,12 @@ function initEmail(config: any) {
     }
 }
 
-function initEnv(config: any) {
-    const emailPassword = process.env['EMAIL_PASSWORD']
-    const env: any = config.env = {
-        admin: {
-            email: process.env['ADMIN_EMAIL'],
-            password: process.env['ADMIN_PASSWORD']
-        },
-        mongodb: {
-            name: process.env['MONGODB_NAME'],
-            password: process.env['MONGODB_PASSWORD']
-        },
-        emailPassword: {
-            email: emailPassword,
-            notice: process.env['EMAIL_PASSWORD_NOTICE'] ?? emailPassword,
-            reply: process.env['EMAIL_PASSWORD_REPLY'] ?? emailPassword,
-            authCode: process.env['EMAIL_PASSWORD_AUTH'] ?? emailPassword
-        }
-    }
-    if ('KV_URL' in process.env) {
-        env.redis = {
-            url: process.env['KV_URL'],
-            tls: false
-        }
-    } else if ('REDIS_URL' in process.env) {
-        env.redis = {
-            url: process.env['REDIS_URL'],
-            tls: !!Number.parseInt(process.env['REDIS_TLS']!)
-        }
-    } else {
-        env.redis = {
-            host: process.env['REDIS_HOST'],
-            port: Number.parseInt(process.env['REDIS_PORT']!),
-            password: process.env['REDIS_PASSWORD'],
-            tls: !!Number.parseInt(process.env['REDIS_TLS']!)
-        }
-    }
-}
-
 export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logout' | 'delete' | 'hide' | 'count'
-const mustKeys = ['domUrl', 'siteTitle', 'encrypt']
+const mustKeys = ['domUrl', 'siteTitle', 'encrypt', 'admin', 'mongodb', 'redis']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
     encrypt: (text: string) => string
-    /** 环境变量 */
-    env: {
-        admin: {
-            email: string
-            password: string
-        }
-        mongodb: {
-            name: string,
-            password: string
-        }
-        redis: {
-            url?: string,
-            host?: string,
-            port?: number,
-            password?: string,
-            tls: boolean
-        }
-        emailPassword: {
-            email: string
-            reply: string
-            authCode: string
-        }
-    }
 }
 
 export interface KmentsConfigTemplate {
@@ -139,10 +73,28 @@ export interface KmentsConfigTemplate {
     domUrl: URL
     /** 网站名称 */
     siteTitle: string
+    /** 管理员设置 */
+    admin: {
+        /** 管理员邮箱 */
+        email: string
+        /** 管理员密码（后台密码，不是邮箱密码） */
+        password: string
+    }
+    mongodb: {
+        name: string
+        password: string
+    }
+    redis: {
+        url?: string,
+        host?: string,
+        port?: number,
+        password?: string,
+        tls: boolean
+    }
     /**
      * 当类型为函数时，用于单向加密指定的字符串
      *
-     * 当类型为字符串时，表示这是一个用于计算随机种子的字符串，可以使用字符串模板嵌套一些随机内容
+     * 当类型为字符串时，表示这是一个用于计算随机种子的字符串，可以使用字符串模板嵌套一些内容
      *
      * 注意：必须保证**同样的输入产生同样的输出**
      */

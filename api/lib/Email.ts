@@ -6,7 +6,7 @@ import {loadConfig} from './ConfigLoader'
 /** 发送评论信息到博主邮箱 */
 export async function sendNotice(info: CommentPostEmailInfo) {
     const config = loadConfig()
-    const to = config.env.admin.email
+    const to = config.admin.email
     return sendTo(to, config.noticeEmail!, info, 'normal')
 }
 
@@ -61,6 +61,8 @@ export interface EmailBasicConfig {
     service?: 'Gmail' | 'Hotmail' | 'Outlook' | 'Yahoo' | 'QQ' | 'Zoho' | 'SMTP'
     /** 用户名（通常为邮箱地址） */
     user?: string
+    /** 密码 */
+    password?: string
     /** 邮件标题 */
     title?: string
     /** 发件人姓名 */

@@ -11,7 +11,7 @@ export function connectRedis(): Redis {
         lazyConnect: true
     }
     const helper = () => {
-        const env = loadConfig().env.redis
+        const env = loadConfig().redis
         const tlsOptional = env.tls ? {} : {
             tls: {
                 rejectUnauthorized: false

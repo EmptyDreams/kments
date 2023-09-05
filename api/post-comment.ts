@@ -67,7 +67,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
 async function noticeMaster(body: CommentBody, title: string, url: string) {
     const config = loadConfig()
     const emailConfig = config.noticeEmail
-    const masterEmail = config.env.admin.email
+    const masterEmail = config.admin.email
     if (!emailConfig || body.email == masterEmail) return
     return sendNotice({
         body: {
@@ -124,7 +124,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
                         set.add(it.email)
                         return true
                     }).map(comment => {
-                        if (config.env.admin.email == comment.email || body.email == comment.email) return
+                        if (config.admin.email == comment.email || body.email == comment.email) return
                         return sendReplyTo(comment.email, {
                             replied: {
                                 name: comment.name,
@@ -154,7 +154,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
             projection: {name: true, email: true, emailMd5: true, content: true}}
         ).then(async modifyResult => {
             const comment = modifyResult.value!
-            if (comment.email == config.env.admin.email || comment.email == body.email) return
+            if (comment.email == config.admin.email || comment.email == body.email) return
             try {
                 return await sendReplyTo(comment.email as string, {
                     replied: {
