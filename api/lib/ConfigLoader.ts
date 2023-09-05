@@ -18,10 +18,6 @@ export function loadConfig(): KmentsConfig {
 /** 从指定路径下加载配置 */
 export function loadConfigFrom(path: string): KmentsConfig {
     const config = require(path).default
-    for (let key of mustKeys) {
-        if (!(key in config))
-            throw `用户配置缺失 ${key} 字段`
-    }
     function merge(src: any, def: any) {
         for (let key in def) {
             const defValue = def[key]
@@ -36,7 +32,7 @@ export function loadConfigFrom(path: string): KmentsConfig {
     if (typeof config.encrypt == 'string') {
         const seed = config.encrypt as string
         config.encrypt = (text: string) => {
-            const random = SeedRandom.tychei(seed)
+            const random = SeedRandom.tychei(text + seed)
             const index = Math.floor(random.double() * text.length)
             const slot = random.int32().toString(36)
             return text.substring(0, index) + slot + text.substring(index)
@@ -61,7 +57,6 @@ function initEmail(config: any) {
 }
 
 export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logout' | 'delete' | 'hide' | 'count'
-const mustKeys = ['domUrl', 'siteTitle', 'encrypt', 'admin', 'mongodb', 'redis']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
@@ -96,7 +91,8 @@ export interface KmentsConfigTemplate {
      *
      * 当类型为字符串时，表示这是一个用于计算随机种子的字符串，可以使用字符串模板嵌套一些内容
      *
-     * 注意：必须保证**同样的输入产生同样的输出**
+     * 注意：尽量保证**同样的输入产生同样的输出**，每次结果不同目前并不会有问题，但是不能保证永远不会出问题。
+     * 如果你是使用字符串的话建议向其中插入随机的内容，确保每次生成不同的内容，以提高加密的可靠性。
      */
     encrypt: ((text: string) => string) | string
     /** 缺省的邮箱配置 */
