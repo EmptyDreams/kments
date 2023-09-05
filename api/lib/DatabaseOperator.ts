@@ -1,17 +1,18 @@
 import {Db, MongoClient} from 'mongodb'
 import {loadConfig} from './ConfigLoader'
 
-let db: Db
+const cacheMap = new Map<string, MongoClient>()
 
 /** 连接数据库 */
-export async function connectDatabase(): Promise<Db> {
-    if (db) return db
-    const config = loadConfig().mongodb
-    // noinspection SpellCheckingInspection
-    const client = new MongoClient(
-        `mongodb+srv://${config.name}:${config.password}@comments.rwouas6.mongodb.net/?retryWrites=true&w=majority`,
-        {compressors: ['zstd', 'zlib']}
-    )
-    db = client.db('kments')
-    return db
+export async function connectDatabase(url?: string, dbName?: string): Promise<Db> {
+    if (!url) {
+        url = loadConfig().mongodb
+    }
+    let cache = cacheMap.get(url)
+    if (!cache) {
+        // noinspection SpellCheckingInspection
+        cache = new MongoClient(url, {compressors: ['zstd', 'zlib']})
+        cacheMap.set(url, cache)
+    }
+    return cache.db(dbName ?? 'kments')
 }
