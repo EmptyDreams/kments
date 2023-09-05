@@ -7,6 +7,7 @@ const cacheMap = new Map<string, MongoClient>()
 export function connectDatabase(url?: string, dbName?: string): Db {
     if (!url) {
         url = loadConfig().mongodb
+        dbName = 'kments'
     }
     let cache = cacheMap.get(url)
     if (!cache) {
@@ -14,5 +15,5 @@ export function connectDatabase(url?: string, dbName?: string): Db {
         cache = new MongoClient(url, {compressors: ['zstd', 'zlib']})
         cacheMap.set(url, cache)
     }
-    return cache.db(dbName ?? 'kments')
+    return cache.db(dbName)
 }

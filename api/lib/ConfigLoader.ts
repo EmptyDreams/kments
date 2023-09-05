@@ -126,9 +126,9 @@ export interface KmentsConfigTemplate {
     commentChecker?: CommentChecker
     /** 非管理员用户评论修改时间限制（单位 s） */
     commentUpdateTimeLimit?: number
-    importer: {
-        /** 过滤数据 */
-        filter: (type: DataType, data: any) => boolean
+    importer?: {
+        /** url 映射器 */
+        urlMapper?: (type: DataType, url: string) => string
     }
 }
 
