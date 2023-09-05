@@ -56,6 +56,16 @@ function initEmail(config: any) {
     }
 }
 
+/**
+ * admin - 管理员登录
+ * gets - 评论获取（包含最近评论）
+ * post - 评论发布、回复
+ * login - 用户认证
+ * logout - 取消认证
+ * delete - 删除评论
+ * hide - 隐藏评论
+ * count - 访问量统计
+ */
 export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logout' | 'delete' | 'hide' | 'count'
 
 export interface KmentsConfig extends KmentsConfigTemplate {
