@@ -187,7 +187,7 @@ export async function rebuildRecentComments(cache?: string[]) {
             })
         )
     }
-    const db = await connectDatabase()
+    const db = connectDatabase()
     const collections = (await db.collections()).filter(it => it.collectionName.startsWith('c-'))
     function insertElement(ele: Element) {
         let index = list.findIndex(it => it.id.getTimestamp().getTime() < ele.id.getTimestamp().getTime())

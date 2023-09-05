@@ -43,7 +43,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
 }
 
 async function hideCommentsWithAdmin(pageId: string, values: string[]): Promise<number> {
-    const db = await connectDatabase()
+    const db = connectDatabase()
     const result = await db.collection(pageId)
         .updateMany(
             {_id: {$in: values.map(it => new ObjectId(it))}},
@@ -53,7 +53,7 @@ async function hideCommentsWithAdmin(pageId: string, values: string[]): Promise<
 }
 
 async function hideCommentsWithUser(pageId: string, values: string[], email: string): Promise<number> {
-    const db = await connectDatabase()
+    const db = connectDatabase()
     const result = await db.collection(pageId)
         .updateMany({
             _id: {$in: values.map(it => new ObjectId(it))},

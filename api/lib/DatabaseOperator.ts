@@ -4,7 +4,7 @@ import {loadConfig} from './ConfigLoader'
 const cacheMap = new Map<string, MongoClient>()
 
 /** 连接数据库 */
-export async function connectDatabase(url?: string, dbName?: string): Promise<Db> {
+export function connectDatabase(url?: string, dbName?: string): Db {
     if (!url) {
         url = loadConfig().mongodb
     }

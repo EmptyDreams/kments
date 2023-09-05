@@ -50,7 +50,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             }
             break
     }
-    const db = await connectDatabase()
+    const db = connectDatabase()
     const list = await readCommentsFromDb(
         db.collection(info.id), filter
     ).skip(info.start).limit(info.len).toArray()

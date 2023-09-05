@@ -49,11 +49,12 @@ export default async function (request: VercelRequest, response: VercelResponse)
             return response.status(200).json({status: 403})
         const realId = calcHash('md5', config.encrypt(`login-code-${Date.now()}-${email}`))
         await Promise.all([
-            connectDatabase().then(async db => {
+            async () => {
+                const db = connectDatabase()
                 const collection = db.collection('login-verify')
                 await collection.deleteOne({email: email})
                 await collection.insertOne({email, verify: realId})
-            }),
+            },
             connectRedis().del(redisKey)
         ])
         response.setHeader(
@@ -87,8 +88,7 @@ function generateCode(length: number): string {
 export async function verifyAuth(request: VercelRequest, email: string): Promise<boolean> {
     const cookies = request.cookies
     if (!('kments-login-code' in cookies)) return false
-    const db = await connectDatabase()
-    const collection = db.collection('login-verify')
+    const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOne({
         email: email
     }, {projection: {verify: true}})
@@ -100,8 +100,7 @@ export async function verifyAuth(request: VercelRequest, email: string): Promise
 export async function getAuthEmail(request: VercelRequest): Promise<string | undefined> {
     const cookies = request.cookies
     if (!('kments-login-code' in cookies)) return undefined
-    const db = await connectDatabase()
-    const collection = db.collection('login-verify')
+    const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOne(
         {verify: cookies['kments-login-code']},
         {projection: {email: true}}

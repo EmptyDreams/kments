@@ -28,8 +28,8 @@ export default async function (request: VercelRequest, response: VercelResponse)
             msg: '评论包含非法内容'
         })
     const collectionName = `c-${config.unique(page)}`
+    const db = connectDatabase()
     if (await verifyAdminStatus(request)) {
-        const db = await connectDatabase()
         const result = await db.collection(collectionName).updateOne({
             _id: new ObjectId(id)
         }, {$set: {content}})
@@ -43,7 +43,6 @@ export default async function (request: VercelRequest, response: VercelResponse)
             status: 401,
             msg: '未认证用户禁止修改评论内容'
         })
-        const db = await connectDatabase()
         const commentId = new ObjectId(id)
         const publishTime = Math.floor(commentId.getTimestamp().getTime() / 1000)
         const result = await db.collection(collectionName)

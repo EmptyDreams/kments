@@ -47,7 +47,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             message: commentChecked
         })
     }
-    const collection = (await connectDatabase()).collection<CommentBody>(pageId)
+    const collection = connectDatabase().collection<CommentBody>(pageId)
     Promise.all([
         collection.insertOne(body),
         reply(collection, body, pageTitle, pageUrl),

@@ -18,9 +18,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     if (!('kments-login-code' in cookies))
         return response.status(200).json({status: 204})
     const code = cookies['kments-login-code']
-    const db = await connectDatabase()
-    await db.collection('login-verify')
-        .deleteOne({verify: code})
+    await connectDatabase().collection('login-verify').deleteOne({verify: code})
     const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
     response.setHeader(
         'Set-Cookie',

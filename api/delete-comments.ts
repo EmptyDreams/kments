@@ -32,7 +32,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const body = request.body
     const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
     const oldLength = recentComments.length
-    const db = await connectDatabase()
+    const db = connectDatabase()
     await Promise.all(
         Object.getOwnPropertyNames(body)
             .map(it => deleteCommentsFromCollection(db, config.unique(it), body[it], recentComments))

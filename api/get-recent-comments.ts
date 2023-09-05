@@ -32,7 +32,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             status: 200,
             data: []
         })
-    const db = await connectDatabase()
+    const db = connectDatabase()
     const map = new Map<string, ObjectId[]>()
     list.forEach(it => {
         const [id, pageId] = it.split(':', 2)
