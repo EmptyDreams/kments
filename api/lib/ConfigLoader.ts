@@ -1,6 +1,7 @@
 import * as HTMLChecker from 'fast-html-checker'
 import {CheckResult} from 'fast-html-checker'
 import path from 'path'
+import SeedRandom from 'seedrandom'
 import {AuthCodeEmailInfo, CommentPostEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
 
 let loaded: KmentsConfig
@@ -33,6 +34,15 @@ export function loadConfigFrom(path: string): KmentsConfig {
     merge(config, defaultConfig)
     initEnv(config)
     initEmail(config)
+    if (typeof config.encrypt == 'string') {
+        const seed = config.encrypt as string
+        config.encrypt = (text: string) => {
+            const random = SeedRandom.tychei(seed)
+            const index = Math.floor(random.double() * text.length)
+            const slot = random.int32().toString(36)
+            return text.substring(0, index) + slot + text.substring(index)
+        }
+    }
     return config
 }
 
@@ -98,6 +108,7 @@ const mustKeys = ['domUrl', 'siteTitle', 'encrypt']
 
 export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
+    encrypt: (text: string) => string
     /** 环境变量 */
     env: {
         admin: {
@@ -128,8 +139,14 @@ export interface KmentsConfigTemplate {
     domUrl: URL
     /** 网站名称 */
     siteTitle: string
-    /** 单向加密指定的字符串，必须保证同样的字符串加密出相同的内容 */
-    encrypt: (text: string) => string
+    /**
+     * 当类型为函数时，用于单向加密指定的字符串
+     *
+     * 当类型为字符串时，表示这是一个用于计算随机种子的字符串，可以使用字符串模板嵌套一些随机内容
+     *
+     * 注意：必须保证**同样的输入产生同样的输出**
+     */
+    encrypt: ((text: string) => string) | string
     /** 缺省的邮箱配置 */
     email?: EmailBasicConfig
     /** 博主评论通知配置 */
