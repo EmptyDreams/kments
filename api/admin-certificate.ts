@@ -20,7 +20,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         msg: '密码错误'
     })
     const adminId = calcHash('md5', `${Date.now()}-${password}-${Math.random()}`)
-    const domain = isDev ? 'localhost' : config.domUrl.host
+    const domain = isDev ? 'localhost' : config.admin.domUrl.host
     response.setHeader(
         'Set-Cookie',
         `admin="${adminId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; HttpOnly; SameSite=None;`

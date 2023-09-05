@@ -21,7 +21,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const db = await connectDatabase()
     await db.collection('login-verify')
         .deleteOne({verify: code})
-    const domain = isDev ? 'localhost' : loadConfig().domUrl.host
+    const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
     response.setHeader(
         'Set-Cookie',
         `kments-login-code=""; Max-Age=-1; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`

@@ -26,7 +26,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     const {cookies, body} = request
     if ('login-id' in cookies)
         return response.status(200).json({status: 304})
-    const domain = isDev ? 'localhost' : config.domUrl.host
+    const domain = isDev ? 'localhost' : config.admin.domUrl.host
     const email = body.email as string
     if (!('email' in body)) return response.status(200).json({
         status: 400,

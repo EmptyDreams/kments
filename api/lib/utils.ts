@@ -106,7 +106,7 @@ export async function initRequest(
         response.setHeader('Access-Control-Allow-Origin', `http://${process.env['VERCEL_URL']}`)
         return {location: '中国', ip: '::1', count: 0, config}
     }
-    const url = config.domUrl.href
+    const url = config.admin.domUrl.href
     if (!request.headers.referer?.startsWith(url)) {
         response.status(403).end()
         return false

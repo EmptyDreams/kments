@@ -69,16 +69,16 @@ export interface KmentsConfig extends KmentsConfigTemplate {
 }
 
 export interface KmentsConfigTemplate {
-    /** 前端的 URL */
-    domUrl: URL
-    /** 网站名称 */
-    siteTitle: string
     /** 管理员设置 */
     admin: {
         /** 管理员邮箱 */
         email: string
         /** 管理员密码（后台密码，不是邮箱密码） */
         password: string
+        /** 前端的 URL */
+        domUrl: URL
+        /** 网站名称 */
+        siteTitle: string
     }
     mongodb: {
         name: string
@@ -187,19 +187,19 @@ const defaultConfig = {
     },
     noticeEmail: {
         text: (info: CommentPostEmailInfo): string =>
-            `尊敬的博主，有人在您的网站（${loadConfig().siteTitle}）内发布了新的评论：\n` +
+            `尊敬的博主，有人在您的网站（${loadConfig().admin.siteTitle}）内发布了新的评论：\n` +
             `${info.body.rawText}\n` +
             `如需回复或管理评论，请前往 ${info.pageUrl}。\n` +
             `请勿转发该邮件，可能导致他人以您的身份发布评论！`,
         html: (info: CommentPostEmailInfo): string => {
-            const siteTitle = loadConfig().siteTitle
+            const siteTitle = loadConfig().admin.siteTitle
             const {body, pageUrl, page} = info
             return `<div style=margin:auto;width:90%;max-width:600px><p style=text-align:center;font-size:1.25rem;font-weight:700;margin:0>${siteTitle} 评论通知</p><p style=text-align:center;color:#666;font-size:.85rem>有人在 ${page} 中发布新的评论了呦~</p><div style="border-radius:12px;border:1px solid #6cf;box-shadow:1px 2px 4px 2px #6cf;padding:15px 25px;width:100%;box-sizing:border-box"><div style="margin:10px 0;display:flex;align-items:center"><img src="https://cravatar.cn/avatar/${body.email}" alt=avatar style=width:30px;height:30px;border-radius:50%;margin-right:10px> <strong>${body.name}</strong></div><div style="margin:10px 0;word-break:break-word">${body.rawText}</div><div style=width:100%;text-align:center;margin-top:20px><a href="${pageUrl.href}"  target=_blank style="text-decoration:none;background:#57bd6a;color:#f5f5f5;font-size:1.1rem;font-weight:700;padding:8px 6px 8px 10px;letter-spacing:4px;border-radius:8px;transition:all .3s">查看详情</a></div></div><p style=text-align:center;font-size:.85rem;color:#6a6a6a>该邮件由系统自动发送，回复评论请前往站内进行回复，请勿回复邮件。<br><strong>邮件内部包含不可见的隐私信息，请勿将邮件转发给他人。</strong></p></div><style>a:hover{background:#5f75fd!important}</style>`
         }
     },
     replyEmail: {
         text: (info: CommentReplyEmailInfo): string =>
-            `您在 ${loadConfig().siteTitle} 发布的评论：\n` +
+            `您在 ${loadConfig().admin.siteTitle} 发布的评论：\n` +
             `${info.replied.rawText}\n` +
             `收到了来自 ${info.newly.name} 的回复：\n` +
             `${info.newly.rawText}\n` +
@@ -207,7 +207,7 @@ const defaultConfig = {
             `如需回复，请前往 ${info.pageUrl.href} (￣▽￣)"\n` +
             `请勿转发该邮件，这可能导致他人以您的身份发布评论！`,
         html: (info: CommentReplyEmailInfo): string => {
-            const siteTitle = loadConfig().siteTitle
+            const siteTitle = loadConfig().admin.siteTitle
             const {replied, newly, pageUrl, page} = info
             return `<div style=margin:auto;width:90%;max-width:600px><p style=text-align:center;font-size:1.25rem;font-weight:700;margin:0>${siteTitle} 评论通知</p><p style=text-align:center;color:#666;font-size:.85rem>你在 ${page} 中发布的评论有人回复了哟~</p><div style="border-radius:12px;border:1px solid #6cf;box-shadow:1px 2px 4px 2px #6cf;padding:15px 25px;width:100%;box-sizing:border-box"><div class=head><img src="https://cravatar.cn/avatar/${replied.email}" alt=avatar> <strong>${replied.name}</strong></div><div style="margin:10px 0;word-break:break-word">${replied.rawText}</div><div style="width:100%;height:0;border:2px dashed #6f6f6f;margin-bottom:10px"></div><div class=head><img src="https://cravatar.cn/avatar/${newly.email}" alt=avatar> <strong>${newly.name}</strong></div><div style="margin:10px 0;word-break:break-word">${newly.rawText}</div><div style=width:100%;text-align:center;margin-top:20px><a href="${pageUrl.href}"  target=_blank style="text-decoration:none;background:#57bd6a;color:#f5f5f5;font-size:1.1rem;font-weight:700;padding:8px 6px 8px 10px;letter-spacing:4px;border-radius:8px;transition:all .3s">查看详情</a></div></div><p style=text-align:center;font-size:.85rem;color:#6a6a6a>该邮件由系统自动发送，回复评论请前往站内进行回复，请勿回复邮件。<br><strong>邮件内部包含不可见的隐私信息，请勿将邮件转发给他人。</strong></p></div><style>.head{margin:10px 0;display:flex;align-items:center}.head img{width:30px;height:30px;border-radius:50%;margin-right:10px}a:hover{background:#5f75fd!important}</style>`
         },
@@ -218,9 +218,9 @@ const defaultConfig = {
         text: (info: AuthCodeEmailInfo): string =>
             `您好！这是用于${info.msg}的验证码，请您接收：${info.code}\n` +
             `请勿将该验证码告知他人，以防您的个人信息泄露或身份被顶替！\n` +
-            `如果您没有在本站（${loadConfig().domUrl}）进行${info.msg}，可能是由于有人误用您的邮箱或冒名顶替您的身份，您可以与我沟通协商解决。`,
+            `如果您没有在本站（${loadConfig().admin.domUrl}）进行${info.msg}，可能是由于有人误用您的邮箱或冒名顶替您的身份，您可以与我沟通协商解决。`,
         html: (info: AuthCodeEmailInfo): string => {
-            const siteTitle = loadConfig().siteTitle
+            const siteTitle = loadConfig().admin.siteTitle
             const {code, msg, name} = info
             return `<div style="text-align:center;width:90%;max-width:625px;border-radius:16px;border:1px solid #6cf;box-shadow:1px 2px 4px 2px #6cf;overflow:hidden;margin:10px auto"><strong style=display:block;width:100%;line-height:50px;background:#2196f3;color:#fff;font-weight:700;font-size:1.2rem>${siteTitle} - 验证码</strong><div style="text-align:left;padding:10px 25px"><p>亲爱的 <strong>${name}</strong>：</p><p>这是您的用于${msg}的验证码，如果并非您本人操作请忽略该邮件：</p><div style=display:inline-block;text-align:center;width:100%><p style="display:inline-block;background:#2196f3;color:#fff;font-size:1.5rem;font-weight:700;padding:10px 24px 10px 30px;border-radius:10px;letter-spacing:6px;margin:5px 0">${code}</p></div><p>感谢您选择 ${siteTitle}。</p></div></div><p style=text-align:center;color:#778899;font-size:.8rem>此邮件由系统自动发送，请勿回复。<br>请勿将验证码告知他人。</p>`
         }
