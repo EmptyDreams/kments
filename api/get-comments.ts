@@ -1,6 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
+import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {CommentBody} from './post-comment'
 import {initRequest} from './lib/utils'
@@ -13,7 +14,7 @@ import {initRequest} from './lib/utils'
  *
  * 请求参数列表：
  *
- * + `id`: 页面唯一标识
+ * + `page`: 页面 pathname
  * + `start`: 起始下标（从零开始，缺省 0）
  * + `len`: 获取的评论数量（缺省 10）
  * + `truth`: 是否显示隐藏的评论，仅管理员身份有效（缺省 0）[0-不显示，1-显示，2-只显示隐藏评论]
@@ -61,9 +62,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
 
 async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
     const searchString = request.url?.substring(request.url!.indexOf('?') + 1)
-    if (!searchString) return '缺少 URL 信息'
+    if (!searchString) return '缺少 URL 参数'
     const params = new URLSearchParams(searchString)
-    if (!params.has('id')) return '缺少页面唯一标识符'
+    const pageUrl = params.get('page')
+    if (!pageUrl) return '缺少 page 信息'
     const start = Number.parseInt(params.get('start') ?? '0')
     const len = Number.parseInt(params.get('len') ?? '10')
     let truth = 0
@@ -73,7 +75,7 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
         if (isAdmin) truth = Number.parseInt(truthParam)
     }
     return {
-        id: `c-${params.get('id')}`,
+        id: `c-${loadConfig().unique(pageUrl)}}`,
         start, len, truth: truth as 0 | 1 | 2
     }
 }

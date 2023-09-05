@@ -12,12 +12,12 @@ const globalKey = 'count-all'
  *
  * 请求方法：POST (with text)
  *
- * 参数内容：页面的唯一标识符，留空表示获取全局统计
+ * 参数内容：页面的 pathname，留空表示获取全局统计
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(request, response, 'count', 'POST')
     if (!checkResult) return
-    const {ip} = checkResult
+    const {ip, config} = checkResult
     const page = request.body
     const redis = connectRedis()
     if (!page) {
@@ -35,8 +35,9 @@ export default async function (request: VercelRequest, response: VercelResponse)
         }
         return
     }
-    const record = ipRecord.get(page)
-    const key = `count:${page}`
+    const pageId = config.unique(page)
+    const record = ipRecord.get(pageId)
+    const key = `count:${pageId}`
     if (record) {
         if (record.has(ip)) {
             return response.status(200).json({
@@ -47,7 +48,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     } else {
         const set = new Set<string>()
         set.add(ip)
-        ipRecord.set(page, set)
+        ipRecord.set(pageId, set)
     }
     if (globalIpRecord.has(ip)) {
         response.status(200).json({

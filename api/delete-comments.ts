@@ -16,8 +16,8 @@ import {initRequest, rebuildRecentComments} from './lib/utils'
  *
  * ```
  * {
- *  pageId0: ['id0', 'id1', ...],
- *  pageId1: ...,
+ *  pagePathname0: ['id0', 'id1', ...],
+ *  pagePathname1: ...,
  *  ...
  * }
  * ```
@@ -28,13 +28,14 @@ export default async function (request: VercelRequest, response: VercelResponse)
     )
     if (!checkResult) return
     if (!await verifyAdminStatus(request)) return response.status(403).end()
+    const {config} = checkResult
     const body = request.body
     const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
     const oldLength = recentComments.length
     const db = await connectDatabase()
     await Promise.all(
         Object.getOwnPropertyNames(body)
-            .map(it => deleteCommentsFromCollection(db, it, body[it], recentComments))
+            .map(it => deleteCommentsFromCollection(db, config.unique(it), body[it], recentComments))
     )
     if (recentComments.length != oldLength)
         await rebuildRecentComments(recentComments)

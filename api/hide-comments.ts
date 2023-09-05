@@ -13,18 +13,19 @@ import {initRequest} from './lib/utils'
  *
  * 参数列表如下：
  *
- * + page - 页面 ID
+ * + page - 页面 pathname
  * + values - 要隐藏的评论的 ID
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(request, response, 'hide', 'PUT')
     if (!checkResult) return
-    const {page, values} = request.body
-    if (!(page && values)) return response.status(200).json({
+    let {page, values} = request.body
+    if (!(values && page)) return response.status(200).json({
         status: 400,
         msg: 'page 或 values 值缺失'
     })
-    const pageId = `c-${encodeURIComponent(page)}`
+    const {config} = checkResult
+    const pageId = `c-${encodeURIComponent(config.unique(page))}`
     let count: number
     if (await verifyAdminStatus(request)) {
         count = await hideCommentsWithAdmin(pageId, values)

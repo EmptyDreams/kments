@@ -13,7 +13,7 @@ import {initRequest} from './lib/utils'
  *
  * 请求参数：
  *
- * + page - 页面 ID
+ * + page - 页面 pathname
  * + id - 要修改的评论的 ID
  * + content - 修改后的内容
  */
@@ -27,7 +27,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
             status: 403,
             msg: '评论包含非法内容'
         })
-    const collectionName = `c-${encodeURIComponent(page)}`
+    const collectionName = `c-${config.unique(page)}`
     if (await verifyAdminStatus(request)) {
         const db = await connectDatabase()
         const result = await db.collection(collectionName).updateOne({

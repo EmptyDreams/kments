@@ -1,5 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, ObjectId, Document} from 'mongodb'
+import * as url from 'url'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {sendNotice, sendReplyTo} from './lib/Email'
@@ -15,7 +16,7 @@ import * as HTMLParser from 'fast-html-parser'
  *
  * body 键值说明：
  *
- * + pageId: string - 当前页面的唯一标识符（不能包含英文逗号和星号）
+ * + page: string - 当前页面的 URL
  * + name: string - 发布人昵称
  * + email: string - 发布人邮箱
  * + link: string - 发布人的主页（可选）
@@ -177,7 +178,7 @@ function extractInfo(
     request: VercelRequest, ip: string, location: string
 ): { body: CommentBody, pageId: string, pageTitle?: string, pageUrl: string } | { msg: string } {
     const json = request.body
-    const list = ['name', 'email', 'pageId', 'content', 'pageTitle']
+    const list = ['name', 'email', 'page', 'content', 'pageTitle']
     for (let key of list) {
         if (!(key in json))
             return {msg: `${key} 值缺失`}
@@ -195,11 +196,13 @@ function extractInfo(
         result.reply = json.reply
     if ('at' in json)
         result.at = json.at
+    const config = loadConfig()
+    const pathname = json['page']
     return {
         body: result,
-        pageId: decodeURIComponent(`c-${json['pageId']}`),
+        pageId: `c-${config.unique(pathname)}`,
         pageTitle: json.pageTitle,
-        pageUrl: request.headers.referer ?? 'http://localhost.dev/'
+        pageUrl: url.resolve(config.admin.domUrl.href, pathname)
     }
 }
 

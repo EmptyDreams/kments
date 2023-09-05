@@ -3,6 +3,7 @@ import {CheckResult} from 'fast-html-checker'
 import path from 'path'
 import SeedRandom from 'seedrandom'
 import {AuthCodeEmailInfo, CommentPostEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
+import {calcHash} from './utils'
 
 let loaded: KmentsConfig
 
@@ -71,6 +72,7 @@ export type RateLimitKeys = 'base' | 'admin' | 'gets' | 'post' | 'login' | 'logo
 export interface KmentsConfig extends KmentsConfigTemplate {
     commentChecker: CommentChecker
     encrypt: (text: string) => string
+    unique: (url: string) => string
 }
 
 export interface KmentsConfigTemplate {
@@ -105,6 +107,8 @@ export interface KmentsConfigTemplate {
      * 如果你是使用字符串的话建议向其中插入随机的内容，确保每次生成不同的内容，以提高加密的可靠性。
      */
     encrypt: ((text: string) => string) | string
+    /** 对指定的 URL（仅包含 pathname）计算一个稳定且唯一的 ID，长度不得超过 62，仅允许包含字母和数字 */
+    unique?: (url: string) => string
     /** 缺省的邮箱配置 */
     email?: EmailBasicConfig
     /** 博主评论通知配置 */
@@ -156,6 +160,7 @@ export interface RateLimitExp {
 
 // noinspection JSUnusedGlobalSymbols
 const defaultConfig = {
+    unique: (url: string) => calcHash('md5', url),
     commentChecker: {
         user: (name: string, email: string, link?: string): CheckResult => {
             const nameBlackList = ['节点', '免费', '机场', 'clash']

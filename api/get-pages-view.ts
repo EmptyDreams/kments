@@ -8,15 +8,16 @@ import {initRequest} from './lib/utils'
  *
  * 请求方法：POST (with json)
  *
- * 请求内容应该为一个字符串数组，包含要获取的页面的唯一标识符
+ * 请求内容应该为一个字符串数组，包含要获取的页面的 pathname
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(request, response, 'count', 'POST')
     if (!checkResult) return
+    const {config} = checkResult
     const ids = request.body as string[]
     const pipeline = connectRedis().pipeline()
-    for (let id of ids) {
-        pipeline.get(`count:${id}`)
+    for (let pathname of ids) {
+        pipeline.get(`count:${config.unique(pathname)}`)
     }
     const result = await pipeline.exec()
     if (!result) throw '未接收到返回值'
