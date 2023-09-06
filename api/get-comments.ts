@@ -42,15 +42,15 @@ export default async function (request: VercelRequest, response: VercelResponse)
             filter.hide = {$exists: true}
             break
     }
-    const db = connectDatabase()
-    const cursor = readCommentsFromDb(
-        db.collection(info.id), filter
-    ).skip(info.start).limit(info.len)
-    const list = await cursor.toArray()
+    const collection = connectDatabase().collection(info.id)
+    const countCursor = collection.find(filter).skip(info.start + info.len)
+    const [list, next] = await Promise.all([
+        readCommentsFromDb(collection, filter).skip(info.start).limit(info.len).toArray(),
+        countCursor.hasNext().finally(() => countCursor.close())
+    ])
     response.status(200).json({
-        status: 200,
-        data: list.map(it => extractReturnDate(it as CommentBody)),
-        next: await cursor.hasNext()
+        status: 200, next,
+        data: list.map(it => extractReturnDate(it as CommentBody))
     })
 }
 
