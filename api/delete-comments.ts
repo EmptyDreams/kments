@@ -45,28 +45,31 @@ export default async function (request: VercelRequest, response: VercelResponse)
 async function deleteCommentsFromCollection(
     db: Db, pageId: string, list: string[], recentComments: string[]
 ) {
-    const collection = db.collection<CommentBody>(`c-${encodeURIComponent(pageId)}`)
-    const decrease: {[propName: string]: number} = {}
+    const collection = db.collection<CommentBody>(`c-${pageId}`)
+    const decrease = new Map<string, number>()
     for (let commentId of list) {
         const comment = await collection.findOneAndDelete(
             {_id: new ObjectId(commentId)},
-            {projection: {reply: true, children: true}}
+            {projection: {reply: true}}
         )
         if ('reply' in comment) {
-            if (!list.includes(commentId))
-                decrease[commentId] = (decrease[commentId] ?? 0) - 1
-        } else if ('children' in comment) {
+            const reply = comment.reply as string
+            if (!list.includes(reply))
+                decrease.set(reply, (decrease.get(reply) ?? 0) - 1)
+        } else {
             const index = recentComments.findIndex(it => it.startsWith(commentId))
             if (index >= 0) recentComments.splice(index, 1)
-            const children = comment.children as string[]
-            await collection.deleteMany({_id: {$in: children.map(it => new ObjectId(it))}})
+            await collection.deleteMany({
+                reply: commentId
+            })
         }
     }
-    await Promise.all(
-        Object.getOwnPropertyNames(decrease)
-            .map(id => collection.updateOne(
-                    {_id: new ObjectId(id)}, {$inc: {subCount: decrease[id]}}
-                )
-            )
+    await collection.bulkWrite(
+        Array.from(decrease).map(item => ({
+            updateOne: {
+                filter: {_id: new ObjectId(item[0])},
+                update: {$inc: {subCount: item[1]}}
+            }
+        }))
     )
 }

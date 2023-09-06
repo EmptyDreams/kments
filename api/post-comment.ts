@@ -113,44 +113,34 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
     })
     if (at) {
         const idList = at.map(it => new ObjectId(it))
-        await Promise.all([
-            collection.find(
-                {_id: {$in: idList}},
-                {projection: {name: true, email: true, emailMd5: true, content: true}}
-            ).toArray().then(list => {
-                const set = new Set<string>()
-                return Promise.all(
-                    list.filter(it => {
-                        if (set.has(it.email)) return false
-                        set.add(it.email)
-                        return true
-                    }).map(comment => {
-                        if (config.admin.email == comment.email || body.email == comment.email) return
-                        return sendReplyTo(comment.email, {
-                            replied: {
-                                name: comment.name,
-                                email: comment.emailMd5,
-                                content: comment.content,
-                                rawText: HTMLParser.parse(comment.content).text
-                            }, ...emailInfo()
-                        })
+        await collection.find(
+            {_id: {$in: idList}},
+            {projection: {name: true, email: true, emailMd5: true, content: true}}
+        ).toArray().then(list => {
+            const set = new Set<string>()
+            return Promise.all(
+                list.filter(it => {
+                    if (set.has(it.email)) return false
+                    set.add(it.email)
+                    return true
+                }).map(comment => {
+                    if (config.admin.email == comment.email || body.email == comment.email) return
+                    return sendReplyTo(comment.email, {
+                        replied: {
+                            name: comment.name,
+                            email: comment.emailMd5,
+                            content: comment.content,
+                            rawText: HTMLParser.parse(comment.content).text
+                        }, ...emailInfo()
                     })
-                )
-            }),
-            collection.updateMany({
-                _id: {$in: idList}
-            }, {
-                // @ts-ignore
-                $push: { children: body._id }
-            })
-        ])
+                })
+            )
+        })
     } else {
         await collection.findOneAndUpdate({
             _id: new ObjectId(reply)
         }, {
-            $inc: { subCount: 1},
-            // @ts-ignore
-            $push: { children: body._id }
+            $inc: { subCount: 1}
         }, {
             projection: {name: true, email: true, emailMd5: true, content: true}}
         ).then(async modifyResult => {
@@ -257,8 +247,6 @@ export interface CommentBody extends Document {
     reply?: string,
     /** 要 at 的评论 */
     at?: string[],
-    /** 子评论列表 */
-    children?: string[],
     /** 是否是隐藏评论 */
     hide?: boolean
 }
