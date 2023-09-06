@@ -112,6 +112,7 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
         reply: new URL(url)
     })
     if (at) {
+        if (typeof at == 'string') at = [at]
         const idList = at.map(it => new ObjectId(it))
         await Promise.all([
             collection.find(
@@ -250,7 +251,7 @@ export interface CommentBody extends Document {
     /** 要回复的评论 */
     reply?: string,
     /** 要 at 的评论 */
-    at?: string[],
+    at?: string[] | string,
     /** 是否是隐藏评论 */
     hide?: boolean
 }
