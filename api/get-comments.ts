@@ -94,7 +94,7 @@ export function readCommentsFromDb(collection: Collection, filter: Filter<Docume
 /** 提取返回给客户端的数据 */
 export function extractReturnDate(body: CommentBody): any {
     const result: any = {
-        id: body._id.toString(),
+        id: body._id.toHexString(),
         name: body.name,
         email: body.emailMd5,
         link: body.link || undefined,

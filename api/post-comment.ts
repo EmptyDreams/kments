@@ -57,7 +57,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         response.status(200).json({
             status: 200,
             data: {
-                id: body._id,
+                id: body._id.toHexString(),
                 location: body.location
             }
         })
