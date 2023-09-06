@@ -113,36 +113,40 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
     })
     if (at) {
         const idList = at.map(it => new ObjectId(it))
-        await collection.find(
-            {_id: {$in: idList}},
-            {projection: {name: true, email: true, emailMd5: true, content: true}}
-        ).toArray().then(list => {
-            const set = new Set<string>()
-            return Promise.all(
-                list.filter(it => {
-                    if (set.has(it.email)) return false
-                    set.add(it.email)
-                    return true
-                }).map(comment => {
-                    if (config.admin.email == comment.email || body.email == comment.email) return
-                    return sendReplyTo(comment.email, {
-                        replied: {
-                            name: comment.name,
-                            email: comment.emailMd5,
-                            content: comment.content,
-                            rawText: HTMLParser.parse(comment.content).text
-                        }, ...emailInfo()
+        await Promise.all([
+            collection.find(
+                {_id: {$in: idList}},
+                {projection: {name: true, email: true, emailMd5: true, content: true}}
+            ).toArray().then(list => {
+                const set = new Set<string>()
+                return Promise.all(
+                    list.filter(it => {
+                        if (set.has(it.email)) return false
+                        set.add(it.email)
+                        return true
+                    }).map(comment => {
+                        if (config.admin.email == comment.email || body.email == comment.email) return
+                        return sendReplyTo(comment.email, {
+                            replied: {
+                                name: comment.name,
+                                email: comment.emailMd5,
+                                content: comment.content,
+                                rawText: HTMLParser.parse(comment.content).text
+                            }, ...emailInfo()
+                        })
                     })
-                })
+                )
+            }),
+            collection.updateOne(
+                {_id: new ObjectId(reply)},
+                {$inc: {subCount: 1}}
             )
-        })
+        ])
     } else {
-        await collection.findOneAndUpdate({
-            _id: new ObjectId(reply)
-        }, {
-            $inc: { subCount: 1}
-        }, {
-            projection: {name: true, email: true, emailMd5: true, content: true}}
+        await collection.findOneAndUpdate(
+            {_id: new ObjectId(reply)},
+            {$inc: {subCount: 1}},
+            {projection: {name: true, email: true, emailMd5: true, content: true}}
         ).then(async modifyResult => {
             const comment = modifyResult.value!
             if (comment.email == config.admin.email || comment.email == body.email) return
