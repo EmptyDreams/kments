@@ -13,7 +13,6 @@ import {calcHash, checkEmail, initRequest, isDev} from './lib/utils'
  *
  * 参数列表如下：
  *
- * + name - 用户名（可选）
  * + email - 邮箱
  * + code - 验证码（可选）
  */
