@@ -18,6 +18,7 @@ import {initRequest} from './lib/utils'
  * + `start`: 起始下标（从零开始，缺省 0）
  * + `len`: 获取的评论数量（缺省 10）
  * + `truth`: 是否显示隐藏的评论，仅管理员身份有效（缺省 0）[0-不显示，1-显示，2-只显示隐藏评论]
+ * + `id`: 父评论 ID，当填写该字段后表明获取指定评论的子评论（可空）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
     const checkResult = await initRequest(
@@ -31,23 +32,14 @@ export default async function (request: VercelRequest, response: VercelResponse)
             status: 400,
             msg: info
         })
-    const defFilter = {reply: {$exists: false}}
-    let filter
+    const filter: Filter<Document> = {reply: {$exists: false}}
+    if (info.reply) filter.reply = info.reply
     switch (info.truth) {
-        case 0:
-            filter = defFilter
-            break
         case 1:
-            filter = {
-                hide: {$exists: false},
-                ...defFilter
-            }
+            filter.hide = {$exists: false}
             break
         case 2:
-            filter = {
-                hide: {$exists: true},
-                ...defFilter
-            }
+            filter.hide = {$exists: true}
             break
     }
     const db = connectDatabase()
@@ -78,7 +70,8 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
     }
     return {
         id: `c-${loadConfig().unique(pageUrl)}}`,
-        start, len, truth: truth as 0 | 1 | 2
+        start, len, truth: truth as 0 | 1 | 2,
+        reply: params.get('id') ?? undefined
     }
 }
 
@@ -123,5 +116,7 @@ interface GetInfo {
     /** 长度 */
     len: number,
     /** 是否显示隐藏评论 */
-    truth: 0 | 1 | 2
+    truth: 0 | 1 | 2,
+    /** 父评论 ID */
+    reply?: string
 }
