@@ -4,6 +4,7 @@ import {Db, ObjectId} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
+import {connectRedis} from './lib/RedisOperator'
 import {initRequest} from './lib/utils'
 
 export type DataType = 'twikoo'
@@ -93,5 +94,21 @@ async function importTwikooCommentData(db: Db) {
 
 /** 导入 twikoo 的统计数据 */
 async function importTwikooCountData(db: Db) {
-
+    const config = loadConfig()
+    const collection = db.collection('counter')
+    const array = await collection.find(
+        {}, {projection: {url: true, time: true}}
+    ).toArray()
+    const countResult = new Map<string, number>()
+    for (let item of array) {
+        if (!item.time) continue
+        const url = config.importer?.urlMapper?.('twikoo', item.url) ?? item.url
+        countResult.set(url, (countResult.get(url) ?? 0) + item.time)
+    }
+    const pipeline = connectRedis().pipeline()
+    countResult.forEach((time, url) => {
+        const id = `count:${config.unique(url)}`
+        pipeline.incrby(id, time)
+    })
+    await pipeline.exec()
 }
