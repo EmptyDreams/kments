@@ -51,12 +51,14 @@ export default async function (request: VercelRequest, response: VercelResponse)
             break
     }
     const db = connectDatabase()
-    const list = await readCommentsFromDb(
+    const cursor = readCommentsFromDb(
         db.collection(info.id), filter
-    ).skip(info.start).limit(info.len).toArray()
+    ).skip(info.start).limit(info.len)
+    const list = await cursor.toArray()
     response.status(200).json({
         status: 200,
-        data: list.map(it => extractReturnDate(it as CommentBody))
+        data: list.map(it => extractReturnDate(it as CommentBody)),
+        next: await cursor.hasNext()
     })
 }
 
