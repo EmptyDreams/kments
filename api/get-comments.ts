@@ -32,10 +32,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
             status: 400,
             msg: info
         })
-    const filter: Filter<Document> = {reply: {$exists: false}}
-    if (info.reply) filter.reply = info.reply
+    const filter: Filter<Document> = {}
+    filter.reply = info.reply ? info.reply : {$exists: false}
     switch (info.truth) {
-        case 1:
+        case 0:
             filter.hide = {$exists: false}
             break
         case 2:
@@ -58,8 +58,9 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
     const searchString = request.url?.substring(request.url!.indexOf('?') + 1)
     if (!searchString) return '缺少 URL 参数'
     const params = new URLSearchParams(searchString)
-    const pageUrl = params.get('page')
+    let pageUrl = params.get('page')
     if (!pageUrl) return '缺少 page 信息'
+    else pageUrl = decodeURIComponent(pageUrl)
     const start = Number.parseInt(params.get('start') ?? '0')
     const len = Number.parseInt(params.get('len') ?? '10')
     let truth = 0
@@ -69,7 +70,7 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
         if (isAdmin) truth = Number.parseInt(truthParam)
     }
     return {
-        id: `c-${loadConfig().unique(pageUrl)}}`,
+        id: `c-${loadConfig().unique(pageUrl)}`,
         start, len, truth: truth as 0 | 1 | 2,
         reply: params.get('id') ?? undefined
     }
