@@ -1,5 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {Db, ObjectId} from 'mongodb'
+import {AnyBulkWriteOperation, Db, ObjectId} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {CommentBody} from './post-comment'
@@ -47,7 +47,8 @@ async function deleteCommentsFromCollection(
 ) {
     const collection = db.collection<CommentBody>(`c-${pageId}`)
     const decrease = new Map<string, number>()
-    for (let commentId of list) {
+    const result: AnyBulkWriteOperation<CommentBody>[] = []
+    await Promise.all(list.map(async commentId => {
         const comment = await collection.findOneAndDelete(
             {_id: new ObjectId(commentId)},
             {projection: {reply: true}}
@@ -59,17 +60,18 @@ async function deleteCommentsFromCollection(
         } else {
             const index = recentComments.findIndex(it => it.startsWith(commentId))
             if (index >= 0) recentComments.splice(index, 1)
-            await collection.deleteMany({
-                reply: commentId
+            result.push({
+                deleteMany: {filter: {reply: commentId}}
             })
         }
-    }
-    await collection.bulkWrite(
-        Array.from(decrease).map(item => ({
+    }))
+    await collection.bulkWrite([
+        ...result,
+        ...Array.from(decrease).map(item => ({
             updateOne: {
                 filter: {_id: new ObjectId(item[0])},
                 update: {$inc: {subCount: item[1]}}
             }
         }))
-    )
+    ])
 }
