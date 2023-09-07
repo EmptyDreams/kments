@@ -3,7 +3,8 @@ import {ObjectId} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
 import {getAuthEmail} from './auth-certificate'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {initRequest} from './lib/utils'
+import {connectRedis} from './lib/RedisOperator'
+import {initRequest, rebuildRecentComments} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -37,9 +38,18 @@ export default async function (request: VercelRequest, response: VercelResponse)
         })
         count = await hideCommentsWithUser(pageId, values, email)
     }
+    await updateRecently(values)
     response.status(200).json({
         status: 200, fails: count
     })
+}
+
+async function updateRecently(values: string[]) {
+    const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
+    const oldLength = recentComments.length
+    const removed = recentComments.filter(recently => !values.find(it => recently.startsWith(it)))
+    if (removed.length != oldLength)
+        await rebuildRecentComments(removed)
 }
 
 async function hideCommentsWithAdmin(pageId: string, values: string[]): Promise<number> {
