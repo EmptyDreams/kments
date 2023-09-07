@@ -4,7 +4,7 @@ import * as url from 'url'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
 import {sendNotice, sendReplyTo} from './lib/Email'
-import {connectRedis} from './lib/RedisOperator'
+import {connectRedis, execPipeline} from './lib/RedisOperator'
 import {calcHash, checkEmail, initRequest} from './lib/utils'
 import * as HTMLParser from 'fast-html-parser'
 
@@ -89,10 +89,11 @@ async function pushNewCommentToRedis(pageId: string, body: CommentBody) {
     const id = body._id
     const key = 'recentComments'
     const date = id.getTimestamp().getTime()
-    await connectRedis().pipeline()
-        .zadd(key, date, `${id.toHexString()}:${pageId}`)
-        .zpopmin(key)
-        .exec()
+    await execPipeline(
+        connectRedis().pipeline()
+            .zadd(key, date, `${id.toHexString()}:${pageId}`)
+            .zpopmin(key)
+    )
 }
 
 /** 回复评论 */

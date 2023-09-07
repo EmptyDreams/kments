@@ -1,4 +1,5 @@
 import Redis, {RedisOptions} from 'ioredis'
+import {ChainableCommander} from 'ioredis/built/utils/RedisCommander'
 import {loadConfig} from './ConfigLoader'
 import {rebuildRecentComments} from './utils'
 
@@ -45,18 +46,29 @@ export async function ipCount(key: string, ip: string, time: number): Promise<nu
     const realKey = `${key}:${ip}`
     const now = Date.now()
     const pipeline = connectRedis().pipeline()
-    pipeline.zremrangebyscore(realKey, '-inf', now - time)
+        .zremrangebyscore(realKey, '-inf', now - time)
         .zadd(realKey, now, now)
         .zcard('recentComments')
         .zcard(realKey)
-    const list = (await pipeline.exec())!
-    let err, result
-    [err, result] = list[pipeline.length - 2]
-    if (err) throw err
-    if ((result as number) < 10) {
+    const list = await execPipeline(pipeline)
+    const length = list[pipeline.length - 2]
+    if (length < 10) {
         await rebuildRecentComments()
     }
-    [err, result] = list[pipeline.length - 1]
-    if (err) throw err
-    return result as number
+    return list[pipeline.length - 1]
+}
+
+/** 执行 pipeline，当 defValue 未定义时遇到异常将会直接时函数失败 */
+export async function execPipeline(pipeline: ChainableCommander, defValue?: any): Promise<any[]> {
+    const result = await pipeline.exec()
+    if (!result) throw 'result is null'
+    let errFlag = false
+    for (const [err] of result) {
+        if (err) {
+            errFlag = true
+            console.error(err)
+        }
+    }
+    if (errFlag && !defValue) throw 'exec 执行过程中出现异常'
+    return result.map(([err, value]) => err ? defValue : value)
 }

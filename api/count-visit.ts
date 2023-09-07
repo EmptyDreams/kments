@@ -1,5 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {connectRedis} from './lib/RedisOperator'
+import {connectRedis, execPipeline} from './lib/RedisOperator'
 import {initRequest} from './lib/utils'
 
 const ipRecord = new Map<string, Set<string>>()
@@ -57,19 +57,10 @@ export default async function (request: VercelRequest, response: VercelResponse)
         })
     } else {
         globalIpRecord.add(ip)
-        const result = await redis.pipeline().incr(key).incr(globalKey).exec()
-        if (!result) throw '未接受到返回值'
-        let flag = false
-        for (let item of result) {
-            if (item[0]) {
-                console.error(item[0])
-                flag = true
-            }
-        }
-        if (flag) throw '统计时发生错误'
+        const result = await execPipeline(redis.pipeline().incr(key).incr(globalKey))
         response.status(200).json({
             status: 200,
-            data: result[0][1]
+            data: result[0]
         })
     }
 }

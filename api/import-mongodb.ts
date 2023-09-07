@@ -4,7 +4,7 @@ import {Db, ObjectId} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
 import {loadConfig} from './lib/ConfigLoader'
 import {connectDatabase} from './lib/DatabaseOperator'
-import {connectRedis} from './lib/RedisOperator'
+import {connectRedis, execPipeline} from './lib/RedisOperator'
 import {initRequest} from './lib/utils'
 
 export type DataType = 'twikoo'
@@ -110,5 +110,5 @@ async function importTwikooCountData(db: Db) {
         const id = `count:${config.unique(url)}`
         pipeline.incrby(id, time)
     })
-    await pipeline.exec()
+    await execPipeline(pipeline)
 }

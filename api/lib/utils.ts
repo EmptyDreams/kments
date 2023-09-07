@@ -5,7 +5,7 @@ import {Collection, ObjectId} from 'mongodb'
 import path from 'path'
 import {KmentsConfig, loadConfig, RateLimitKeys} from './ConfigLoader'
 import {connectDatabase} from './DatabaseOperator'
-import {connectRedis, ipCount} from './RedisOperator'
+import {connectRedis, execPipeline, ipCount} from './RedisOperator'
 
 export const isDev = process.env['VERCEL_ENV'] == 'development'
 
@@ -33,15 +33,16 @@ const blackList = new Set<string>()
  */
 export async function rateLimit(key: RateLimitKeys, ip: string, config: KmentsConfig): Promise<[number, number]> {
     if (blackList.has(ip)) return [429, -1]
-    const remoteBlackCheck = await connectRedis().pipeline()
-        .sismember(`black-${key}`, ip)
-        .exists(`black-ex-${ip}`)
-        .exec()
-    if (remoteBlackCheck![0][1]) {
+    const remoteBlackCheck = await execPipeline(
+        connectRedis().pipeline()
+            .sismember(`black-${key}`, ip)
+            .exists(`black-ex-${ip}`)
+    )
+    if (remoteBlackCheck[0]) {
         blackList.add(ip)
         return [429, -1]
     }
-    if (remoteBlackCheck![1][1]) return [429, -1]
+    if (remoteBlackCheck[1]) return [429, -1]
     const limit = config.rateLimit![key]
     const count = await ipCount(key, ip, limit.cycle)
     for (let level of limit.level) {
@@ -50,10 +51,11 @@ export async function rateLimit(key: RateLimitKeys, ip: string, config: KmentsCo
             // noinspection FallThroughInSwitchStatementJS
             switch (level[2]) {
                 case -2:
-                    await connectRedis().pipeline()
-                        .sadd(`black-${key}`, ip)
-                        .del(`${key}:${ip}`)
-                        .exec()
+                    await execPipeline(
+                        connectRedis().pipeline()
+                            .sadd(`black-${key}`, ip)
+                            .del(`${key}:${ip}`)
+                    )
                 case -1:
                     blackList.add(ip)
                     break
@@ -217,10 +219,12 @@ export async function rebuildRecentComments(cache?: string[]) {
     // 数量小于阈值时串行执行，否则并行执行
     if (collections.length < 25) await sequence()
     else await parallel()
-    await connectRedis().pipeline()
-        .zremrangebyscore('recentComments', '-inf', '+inf')
-        .zadd(
-            'recentComments',
-            ...list.flatMap(it => [it.id.getTimestamp().getTime(), `${it.id}:${it.pageId}`])
-        ).exec()
+    await execPipeline(
+        connectRedis().pipeline()
+            .zremrangebyscore('recentComments', '-inf', '+inf')
+            .zadd(
+                'recentComments',
+                ...list.flatMap(it => [it.id.getTimestamp().getTime(), `${it.id}:${it.pageId}`])
+            )
+    )
 }

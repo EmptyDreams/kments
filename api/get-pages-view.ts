@@ -1,5 +1,5 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {connectRedis} from './lib/RedisOperator'
+import {connectRedis, execPipeline} from './lib/RedisOperator'
 import {initRequest} from './lib/utils'
 
 // noinspection JSUnusedGlobalSymbols
@@ -19,10 +19,8 @@ export default async function (request: VercelRequest, response: VercelResponse)
     for (let pathname of ids) {
         pipeline.get(`count:${config.unique(pathname)}`)
     }
-    const result = await pipeline.exec()
-    if (!result) throw '未接收到返回值'
     response.status(200).json({
         status: 200,
-        data: result.map(it => it[0] ? -1 : it[1])
+        data: await execPipeline(pipeline, -1)
     })
 }
