@@ -26,7 +26,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         msg: 'page 或 values 值缺失'
     })
     const {config} = checkResult
-    const pageId = `c-${encodeURIComponent(config.unique(page))}`
+    const pageId = `c-${config.unique(page)}`
     let count: number
     if (await verifyAdminStatus(request)) {
         count = await hideCommentsWithAdmin(pageId, values)
