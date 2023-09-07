@@ -25,28 +25,20 @@ export function getUserIp(request: VercelRequest): string | undefined {
     return result
 }
 
-const blackMap = new Map<string, Set<string>>()
+const blackList = new Set<string>()
 
 /**
  * 限制 IP 访问频率
  * @return {Promise<[number, number]>} [状态码，IP 访问次数]
  */
 export async function rateLimit(key: RateLimitKeys, ip: string, config: KmentsConfig): Promise<[number, number]> {
-    let blacked = blackMap.get(key)
-    if (blacked?.has(ip)) return [429, -1]
-    function initBlacked() {
-        if (!blacked) {
-            blacked = new Set()
-            blackMap.set(key, blacked)
-        }
-        return blacked
-    }
+    if (blackList.has(ip)) return [429, -1]
     const remoteBlackCheck = await connectRedis().pipeline()
         .sismember(`black-${key}`, ip)
         .exists(`black-ex-${ip}`)
         .exec()
     if (remoteBlackCheck![0][1]) {
-        initBlacked().add(ip)
+        blackList.add(ip)
         return [429, -1]
     }
     if (remoteBlackCheck![1][1]) return [429, -1]
@@ -63,7 +55,7 @@ export async function rateLimit(key: RateLimitKeys, ip: string, config: KmentsCo
                         .del(`${key}:${ip}`)
                         .exec()
                 case -1:
-                    initBlacked().add(ip)
+                    blackList.add(ip)
                     break
                 default:
                     await connectRedis().setex(`black-ex-${ip}`, level[2], 0)
