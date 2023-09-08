@@ -2,7 +2,7 @@ import * as HTMLChecker from 'fast-html-checker'
 import {CheckResult} from 'fast-html-checker'
 import path from 'path'
 import SeedRandom from 'seedrandom'
-import {DataType} from '../../api/import-mongodb'
+import {DataType} from './api/MongodbImporter'
 import {AuthCodeEmailInfo, CommentPostEmailInfo, CommentReplyEmailInfo, EmailBasicConfig, EmailConfig} from './Email'
 import {calcHash} from './utils'
 

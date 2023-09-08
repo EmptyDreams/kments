@@ -6,5 +6,6 @@ node_modules/
 
 .idea/
 kments.iml
+api/
 
 kmentsConfig.*

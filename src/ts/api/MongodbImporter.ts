@@ -7,6 +7,8 @@ import {connectRedis, execPipeline} from '../RedisOperator'
 import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 
+export type DataType = 'twikoo'
+
 // noinspection JSUnusedGlobalSymbols
 /**
  * 从 mongodb 中导入评论数据
