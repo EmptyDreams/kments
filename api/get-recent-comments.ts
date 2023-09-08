@@ -1,10 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {Document, ObjectId, WithId} from 'mongodb'
-import {extractReturnDate, readCommentsFromDb} from './get-comments'
-import {connectDatabase} from './lib/DatabaseOperator'
-import {CommentBody} from './post-comment'
-import {connectRedis} from './lib/RedisOperator'
-import {initRequest} from './lib/utils'
+import {getRecently} from './lib/src/ts/api/RecentlyGetter'
+import {KmentsPlatform, KmentsPlatformType} from './lib/src/ts/KmentsPlatform'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -17,62 +13,6 @@ import {initRequest} from './lib/utils'
  * + limit - 数量限制（最大为 10，缺省 5）
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'gets', 'GET'
-    )
-    if (!checkResult) return
-    const info = extractInfo(request)
-    const list = await connectRedis().zrevrangebyscore(
-        'recentComments',
-        '+inf', 10,
-        'LIMIT', 0, info.limit - 1
-    )
-    if (!list || list.length == 0)
-        return response.status(200).json({
-            status: 200,
-            data: []
-        })
-    const db = connectDatabase()
-    const map = new Map<string, ObjectId[]>()
-    list.forEach(it => {
-        const [id, pageId] = it.split(':', 2)
-        let idList = map.get(pageId)
-        if (!idList) idList = []
-        idList.push(new ObjectId(id))
-        map.set(pageId, idList)
-    })
-    const task:  Promise<WithId<Document>[]>[] = []
-    for (let [pageId, ids] of map) {
-        db.collection(pageId)
-        task.push(
-            readCommentsFromDb(
-                db.collection(pageId), {_id: {$in: ids}}
-            ).toArray()
-        )
-    }
-    const array = await Promise.all(task)
-    const resultList = array.flatMap(
-        list =>
-            list.map(it => extractReturnDate(it as CommentBody))
-    )
-    resultList.sort((a, b) => a._id.getTimestamp().getTime() - b._id.getTimestamp().getTime())
-    response.status(200).json({
-        status: 200,
-        data: resultList
-    })
-}
-
-function extractInfo(request: VercelRequest): RequestInfo {
-    const url = request.url!
-    const splitIndex = url.indexOf('?')
-    if (splitIndex < 0) return {limit: 5}
-    const searchString = url.substring(splitIndex + 1)
-    const search = new URLSearchParams(searchString)
-    return {
-        limit: Number.parseInt(search.get('limit') ?? '5')
-    }
-}
-
-interface RequestInfo {
-    limit: number
+    const platform = new KmentsPlatform(KmentsPlatformType.VERCEL, request, response)
+    await getRecently(platform)
 }

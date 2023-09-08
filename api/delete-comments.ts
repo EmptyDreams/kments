@@ -1,10 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {AnyBulkWriteOperation, Db, ObjectId} from 'mongodb'
-import {verifyAdminStatus} from './admin-certificate'
-import {connectDatabase} from './lib/DatabaseOperator'
-import {CommentBody} from './post-comment'
-import {connectRedis} from './lib/RedisOperator'
-import {initRequest, rebuildRecentComments} from './lib/utils'
+import {deleteComments} from './lib/src/ts/api/CommentDeleter'
+import {KmentsPlatform, KmentsPlatformType} from './lib/src/ts/KmentsPlatform'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -23,55 +19,6 @@ import {initRequest, rebuildRecentComments} from './lib/utils'
  * ```
  */
 export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'delete', 'DELETE'
-    )
-    if (!checkResult) return
-    if (!await verifyAdminStatus(request)) return response.status(403).end()
-    const {config} = checkResult
-    const body = request.body
-    const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
-    const oldLength = recentComments.length
-    const db = connectDatabase()
-    await Promise.all(
-        Object.getOwnPropertyNames(body)
-            .map(it => deleteCommentsFromCollection(db, config.unique(it), body[it], recentComments))
-    )
-    if (recentComments.length != oldLength)
-        await rebuildRecentComments(recentComments)
-    response.status(200).end()
-}
-
-async function deleteCommentsFromCollection(
-    db: Db, pageId: string, list: string[], recentComments: string[]
-) {
-    const collection = db.collection<CommentBody>(`c-${pageId}`)
-    const decrease = new Map<string, number>()
-    const result: AnyBulkWriteOperation<CommentBody>[] = []
-    await Promise.all(list.map(async commentId => {
-        const comment = await collection.findOneAndDelete(
-            {_id: new ObjectId(commentId)},
-            {projection: {reply: true}}
-        )
-        if ('reply' in comment) {
-            const reply = comment.reply as string
-            if (!list.includes(reply))
-                decrease.set(reply, (decrease.get(reply) ?? 0) - 1)
-        } else {
-            const index = recentComments.findIndex(it => it.startsWith(commentId))
-            if (index >= 0) recentComments.splice(index, 1)
-            result.push({
-                deleteMany: {filter: {reply: commentId}}
-            })
-        }
-    }))
-    await collection.bulkWrite([
-        ...result,
-        ...Array.from(decrease).map(item => ({
-            updateOne: {
-                filter: {_id: new ObjectId(item[0])},
-                update: {$inc: {subCount: item[1]}}
-            }
-        }))
-    ])
+    const platform = new KmentsPlatform(KmentsPlatformType.VERCEL, request, response)
+    await deleteComments(platform)
 }

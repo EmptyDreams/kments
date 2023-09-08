@@ -1,0 +1,4 @@
+[submodule "api/lib"]
+	path = api/lib
+	url = git@github.com:EmptyDreams/kments.git
+	branch = common
