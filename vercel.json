@@ -32,14 +32,9 @@
     {"source": "/get-pages-view/", "destination": "/api/get-pages-view/"}
   ],
   "redirects": [
-    {"source": "/(b|e|f|i|j|k|m|n|o|q|r|s|t|v|w|x|y|z)", "destination": "/404.json", "statusCode": 404},
-    {"source": "/a([b-ce-tv-z])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/c([a-np-q])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/d([a-df-z])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/g([a-df-z])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/h([a-hj-z])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/l([a-np-z])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/p([a-np-z])", "destination": "/404.json", "statusCode": 404},
-    {"source": "/u([a-oq-z])", "destination": "/404.json", "statusCode": 404}
+    {"source": "/private", "destination": "/404.json", "permanent": true},
+    {"source": "/api/lib", "destination": "/404.json", "permanent": true},
+    {"source": "/LICENSE", "destination": "/404.json", "permanent": true},
+    {"source": "/README.md", "destination": "/404.json", "permanent": true}
   ]
 }
