@@ -79,7 +79,7 @@ export class KmentsPlatform {
         this.setHeader('Set-Cookie', value)
     }
 
-    raedCookie(key: string): string | undefined {
+    readCookie(key: string): string | undefined {
         switch (this.platform) {
             case KmentsPlatformType.VERCEL:
                 return (this.request as VercelRequest).cookies[key]
