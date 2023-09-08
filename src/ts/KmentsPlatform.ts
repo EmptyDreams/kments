@@ -4,21 +4,20 @@ import path from 'path'
 import * as zlib from 'zlib'
 
 export class KmentsPlatform {
-    constructor(public platform: KmentsPlatformType, public request: any, public response: any) {}
+
     private _ip: string | undefined
-    /** 获取客户端请求方法 */
+
+    constructor(public platform: KmentsPlatformType, public request: any, public response: any) {}
+
     get method(): string {
         return this.request.method
     }
-    /** 获取客户端的 referer 字段 */
     get referer(): string | undefined {
         return this.readHeader('referer') as string | undefined
     }
-    /** 获取客户端的 origin 字段 */
     get origin(): string | undefined {
         return this.readHeader('origin') as string | undefined
     }
-    /** 获取客户端的 IP 地址 */
     get ip(): string | undefined {
         if (this._ip) return this._ip
         const list = ['x-forwarded-for', 'x-real-ip', 'x-client-ip']
@@ -39,7 +38,24 @@ export class KmentsPlatform {
                 throw `unknowns platform: ${this.platform}`
         }
     }
-    /** 读取一个请求头信息 */
+    get body(): any {
+        return this.request.body
+    }
+
+    readBodyAsString(): string {
+        const result = this.body
+        if (typeof result != 'string')
+            throw 'body is not string'
+        return result
+    }
+
+    readBodyAsJson(): any {
+        const result = this.body
+        if (typeof result != 'object')
+            throw 'body is not json'
+        return result
+    }
+
     readHeader(key: string): string | string[] | undefined {
         switch (this.platform) {
             case KmentsPlatformType.VERCEL:
@@ -48,17 +64,21 @@ export class KmentsPlatform {
                 throw `unknowns platform: ${this.platform}`
         }
     }
-    /** 向响应头写入一个 header */
-    setHeader(key: string, values: string | readonly string[] | number) {
+
+    setHeader(key: string, value: string | readonly string[] | number) {
         switch (this.platform) {
             case KmentsPlatformType.VERCEL:
-                (this.response as VercelResponse).setHeader(key, values)
+                (this.response as VercelResponse).setHeader(key, value)
                 break
             default:
                 throw `unknowns platform: ${this.platform}`
         }
     }
-    /** 读取一个 cookie */
+
+    setCookie(value: string | readonly string[]) {
+        this.setHeader('Set-Cookie', value)
+    }
+
     raedCookie(key: string): string | undefined {
         switch (this.platform) {
             case KmentsPlatformType.VERCEL:
@@ -67,6 +87,7 @@ export class KmentsPlatform {
                 throw `unknowns platform: ${this.platform}`
         }
     }
+
     /** 向客户端发送文本数据 */
     sendText(statusCode: number, text: string) {
         const acceptEncoding = this.readHeader('accept-encoding')
@@ -91,11 +112,13 @@ export class KmentsPlatform {
                 throw `unknowns platform: ${this.platform}`
         }
     }
+
     /** 发送一个 JSON 数据 */
     sendJson(statusCode: number, data: any) {
         this.setHeader('Content-Type', 'application/json')
         this.sendText(statusCode, JSON.stringify(data))
     }
+
     /** 发送一个空响应 */
     sendNull(statusCode: number) {
         switch (this.platform) {
