@@ -5,6 +5,7 @@ import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 import {getAuthEmail} from './AuthCertificate'
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * 修改评论内容
  *
