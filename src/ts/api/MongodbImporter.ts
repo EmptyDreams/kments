@@ -1,34 +1,31 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import {findIPv4} from 'ip-china-location'
 import {Db, ObjectId} from 'mongodb'
-import {verifyAdminStatus} from './admin-certificate'
-import {loadConfig} from '../src/ts/ConfigLoader'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {connectRedis, execPipeline} from '../src/ts/RedisOperator'
-import {initRequest} from '../src/ts/utils'
+import {loadConfig} from '../ConfigLoader'
+import {connectDatabase} from '../DatabaseOperator'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis, execPipeline} from '../RedisOperator'
+import {initRequest} from '../utils'
+import {verifyAdminStatus} from './AdminCertificate'
 
-export type DataType = 'twikoo'
-
+// noinspection JSUnusedGlobalSymbols
 /**
  * 从 mongodb 中导入评论数据
- *
- * 请求方法：POST (with json cookie)
- *
- * 参数解释：
- *
- * + type - 评论名称，当前仅支持 twikoo
- * + mongodb - 数据库的 URL
+ * 
+ * POST: json {
+ *      type: string # 评论名称
+ *      mongodb: string # 数据库的 URL
+ * }
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, 'import', 'POST')
+export async function importMongodb(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'import', 'POST')
     if (!checkResult) return
-    const {type, mongodb} = request.body
+    const {type, mongodb} = platform.readBodyAsJson()
     if (!type || !mongodb)
-        return response.status(200).json({status: 400})
+        return platform.sendJson(200, {status: 400})
     if (!['twikoo'].includes(type))
-        return response.status(200).json({status: 422})
-    if (!await verifyAdminStatus(request))
-        return response.status(200).json({status: 401})
+        return platform.sendJson(200, {status: 422})
+    if (!await verifyAdminStatus(platform))
+        return platform.sendJson(200, {status: 401})
     const db = connectDatabase(mongodb)
     await importTwikooCommentData(db)
     await importTwikooCountData(db)
