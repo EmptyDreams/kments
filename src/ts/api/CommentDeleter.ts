@@ -1,10 +1,10 @@
 import {AnyBulkWriteOperation, Db, ObjectId} from 'mongodb'
-import {CommentBody} from '../../../api/post-comment'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis} from '../RedisOperator'
 import {initRequest, rebuildRecentComments} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
+import {CommentBody} from './CommentsPoster'
 
 /**
  * 删除评论

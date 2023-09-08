@@ -1,10 +1,10 @@
 import {Collection, Document, Filter} from 'mongodb'
-import {CommentBody} from '../../../api/post-comment'
 import {loadConfig} from '../ConfigLoader'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
+import {CommentBody} from './CommentsPoster'
 
 // noinspection JSUnusedGlobalSymbols
 /**

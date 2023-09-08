@@ -1,40 +1,36 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
-import {Collection, ObjectId, Document} from 'mongodb'
-import * as url from 'url'
-import {loadConfig} from '../src/ts/ConfigLoader'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {sendNotice, sendReplyTo} from '../src/ts/Email'
-import {connectRedis, execPipeline} from '../src/ts/RedisOperator'
-import {calcHash, checkEmail, initRequest} from '../src/ts/utils'
 import * as HTMLParser from 'fast-html-parser'
+import {Collection, Document, ObjectId} from 'mongodb'
+import url from 'url'
+import {loadConfig} from '../ConfigLoader'
+import {connectDatabase} from '../DatabaseOperator'
+import {sendNotice, sendReplyTo} from '../Email'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis, execPipeline} from '../RedisOperator'
+import {calcHash, checkEmail, initRequest} from '../utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
  * 发布一个评论
  *
- * 请求方法：POST (with json)
- *
- * body 键值说明：
- *
- * + page: string - 当前页面的 URL
- * + name: string - 发布人昵称
- * + email: string - 发布人邮箱
- * + link: string - 发布人的主页（可选）
- * + content: string - 评论内容（HTML）
- * + pageTitle: string - 当前页面的名称
- * + reply: string - 要回复的评论的 ID（可选）
- * + at: {string|string[]} - 要 @ 的评论的 ID（可选）
+ * POST: json {
+ *      page: string            # 当前页面的 pathname
+ *      name: string            # 发布人昵称
+ *      email: string           # 发布人邮箱
+ *      link?: string           # 发布人主页
+ *      content: string         # 评论内容（HTML 格式）
+ *      pageTitle: string       # 当前页面的标题
+ *      reply?: string          # 要回复的评论的 ID
+ *      at?: string[] | string  # 要 @ 的评论的 ID
+ * }
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'post', 'POST'
-    )
+export async function postComment(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'post', 'POST')
     if (!checkResult) return
     const {ip, location} = checkResult
     // 提取评论内容
-    const {body, pageId, pageTitle, pageUrl, msg} = extractInfo(request, ip, location!) as any
+    const {body, pageId, pageTitle, pageUrl, msg} = extractInfo(platform, ip, location!) as any
     if (msg) {
-        return response.status(400).json({
+        return platform.sendJson(200, {
             status: 400,
             msg: msg
         })
@@ -42,7 +38,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     // 检查是否允许发布
     const commentChecked = checkComment(body, pageId)
     if (typeof commentChecked === 'string') {
-        return response.status(200).json({
+        return platform.sendJson(200, {
             status: 403,
             message: commentChecked
         })
@@ -54,7 +50,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
         pushNewCommentToRedis(pageId, body),
         noticeMaster(body, pageTitle, pageUrl)
     ]).then(() => {
-        response.status(200).json({
+        platform.sendJson(200, {
             status: 200,
             data: {
                 id: body._id.toHexString(),
@@ -171,9 +167,9 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
 
 /** 从请求中提取评论信息 */
 function extractInfo(
-    request: VercelRequest, ip: string, location: string
+    platform: KmentsPlatform, ip: string, location: string
 ): { body: CommentBody, pageId: string, pageTitle?: string, pageUrl: string } | { msg: string } {
-    const json = request.body
+    const json = platform.readBodyAsJson()
     const list = ['name', 'email', 'page', 'content', 'pageTitle']
     for (let key of list) {
         if (!(key in json))

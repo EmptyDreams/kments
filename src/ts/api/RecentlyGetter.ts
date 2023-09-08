@@ -1,10 +1,10 @@
 import {Document, ObjectId, WithId} from 'mongodb'
-import {CommentBody} from '../../../api/post-comment'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis} from '../RedisOperator'
 import {initRequest} from '../utils'
 import {extractReturnDate, readCommentsFromDb} from './CommentsGetter'
+import {CommentBody} from './CommentsPoster'
 
 // noinspection JSUnusedGlobalSymbols
 /**
