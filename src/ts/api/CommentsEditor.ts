@@ -1,45 +1,42 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import {ObjectId} from 'mongodb'
-import {getAuthEmail} from '../src/ts/api/AuthCertificate'
-import {verifyAdminStatus} from './admin-certificate'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {initRequest} from '../src/ts/utils'
+import {connectDatabase} from '../DatabaseOperator'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {initRequest} from '../utils'
+import {verifyAdminStatus} from './AdminCertificate'
+import {getAuthEmail} from './AuthCertificate'
 
-// noinspection JSUnusedGlobalSymbols
 /**
  * 修改评论内容
  *
- * 请求方法：PUT (with json cookie)
- *
- * 请求参数：
- *
- * + page - 页面 pathname
- * + id - 要修改的评论的 ID
- * + content - 修改后的内容
+ * PUT: json {
+ *      page: string    # 评论所在页面的 pathname
+ *      id: string      # 要修改的评论的 ID
+ *      content: string # 修改后的内容（HTML 格式）
+ * }
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, 'post', 'PUT')
+export async function updateComment(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'post', 'PUT')
     if (!checkResult) return
     const {config, location} = checkResult
-    const {page, id, content} = request.body
+    const {page, id, content} = platform.readBodyAsJson()
     if (config.commentChecker.content?.(content))
-        return response.status(200).json({
+        return platform.sendJson(200, {
             status: 403,
             msg: '评论包含非法内容'
         })
     const collectionName = `c-${config.unique(page)}`
     const db = connectDatabase()
-    if (await verifyAdminStatus(request)) {
+    if (await verifyAdminStatus(platform)) {
         const result = await db.collection(collectionName).updateOne({
             _id: new ObjectId(id)
         }, {$set: {content}})
         if (result.modifiedCount == 1)
-            response.status(200).json({status: 200})
+            platform.sendJson(200, {status: 200})
         else
-            response.status(200).json({status: 404})
+            platform.sendJson(200, {status: 404})
     } else {
-        const email = await getAuthEmail(request)
-        if (!email) return response.status(200).json({
+        const email = await getAuthEmail(platform)
+        if (!email) return platform.sendJson(200, {
             status: 401,
             msg: '未认证用户禁止修改评论内容'
         })
@@ -54,8 +51,8 @@ export default async function (request: VercelRequest, response: VercelResponse)
                 }, {$set: {content}}
             )
         if (result.modifiedCount == 1)
-            response.status(200).json({status: 200})
+            platform.sendJson(200, {status: 200})
         else
-            response.status(200).json({status: 423})
+            platform.sendJson(200, {status: 423})
     }
 }
