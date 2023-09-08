@@ -6,7 +6,7 @@ import {calcHash, initRequest, isDev} from '../utils'
 /**
  * 管理员身份认证
  *
- * POST: text
+ * POST: text（管理员密码）
  */
 export async function certifyAdmin(platform: KmentsPlatform) {
     const checkResult = await initRequest(platform, 'admin', 'POST')
