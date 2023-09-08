@@ -24,3 +24,11 @@ export async function certifyAdmin(platform: KmentsPlatform) {
     await connectRedis().setex('admin', 2592000, adminId)
     platform.sendJson(200, {status: 200})
 }
+
+/** 校验管理员身份 */
+export async function verifyAdminStatus(platform: KmentsPlatform): Promise<boolean> {
+    const value = platform.readCookie('admin')
+    if (!value) return false
+    const realId = await connectRedis().get('admin')
+    return realId == value
+}
