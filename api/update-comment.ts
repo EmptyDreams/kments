@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {ObjectId} from 'mongodb'
+import {getAuthEmail} from '../src/ts/api/AuthCertificate'
 import {verifyAdminStatus} from './admin-certificate'
-import {getAuthEmail} from './auth-certificate'
 import {connectDatabase} from '../src/ts/DatabaseOperator'
 import {initRequest} from '../src/ts/utils'
 

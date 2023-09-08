@@ -3,6 +3,11 @@ import {connectRedis} from '../RedisOperator'
 import {calcHash, initRequest, isDev} from '../utils'
 
 // noinspection JSUnusedGlobalSymbols
+/**
+ * 管理员身份认证
+ *
+ * POST: text
+ */
 export async function certifyAdmin(platform: KmentsPlatform) {
     const checkResult = await initRequest(platform, 'admin', 'POST')
     if (!checkResult) return

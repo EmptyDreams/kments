@@ -1,77 +1,84 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
-import * as crypto from 'crypto'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {sendAuthCodeTo} from '../src/ts/Email'
-import {connectRedis} from '../src/ts/RedisOperator'
-import {calcHash, checkEmail, initRequest, isDev} from '../src/ts/utils'
+import {VercelRequest} from '@vercel/node'
+import crypto from 'crypto'
+import {connectDatabase} from '../DatabaseOperator'
+import {sendAuthCodeTo} from '../Email'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis} from '../RedisOperator'
+import {calcHash, checkEmail, initRequest, isDev} from '../utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**
  * 用户身份认证
  *
- * 请求方法：POST (with json cookie)
- *
- * 参数列表如下：
- *
- * + email - 邮箱
- * + code - 验证码（可选）
+ * POST: json {
+ *      email: string
+ *      name?: string
+ *      code?: string
+ * }
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'login', 'POST'
-    )
+export async function certifyUser(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'login', 'POST')
     if (!checkResult) return
     const {config} = checkResult
-    const {cookies, body} = request
-    if ('login-id' in cookies)
-        return response.status(200).json({status: 304})
+    const body = platform.readBodyAsJson()
+    const cookieLoginId = platform.readCookie('login-id')
+    if (cookieLoginId)
+        return platform.sendJson(200, {status: 304})
     const domain = isDev ? 'localhost' : config.admin.domUrl.host
     const email = body.email as string
-    if (!('email' in body)) return response.status(200).json({
+    if (!email) return platform.sendJson(200, {
         status: 400,
         msg: '缺少 email 字段'
     })
-    if (!checkEmail(email))
-        return response.status(200).json({
-            status: 422,
-            msg: '邮箱格式错误'
-        })
+    if (!checkEmail(email)) return platform.sendJson(200, {
+        status: 422,
+        msg: '邮箱格式错误'
+    })
     if (email.toLowerCase() == config.admin.email.toLowerCase())
-        return response.status(200).json({
+        return platform.sendJson(200, {
             status: 423,
-            msg: '无权登录该邮箱'
+            msg: '用户无权登录该邮箱'
         })
     const redisKey = `login-code-${email}`
-    if ('code' in body) {
+    if (body.code) {
         const realCode = await connectRedis().get(redisKey)
-        if (body.code != realCode)
-            return response.status(200).json({status: 403})
+        if (calcHash('md5', body.code) != realCode)
+            return platform.sendJson(200, {
+                status: 403,
+                msg: '验证码错误'
+            })
         const realId = calcHash('md5', config.encrypt(`login-code-${Date.now()}-${email}`))
         await Promise.all([
             async () => {
-                const db = connectDatabase()
-                const collection = db.collection('login-verify')
-                await collection.deleteOne({email: email})
-                await collection.insertOne({email, verify: realId})
+                const collection = connectDatabase().collection(`login-verify`)
+                await collection.bulkWrite([
+                    {
+                        deleteOne: {filter:{email}}
+                    },
+                    {
+                        insertOne: {
+                            document: {email, verify: realId}
+                        }
+                    }
+                ])
             },
             connectRedis().del(redisKey)
         ])
-        response.setHeader(
-            'Set-Cookie',
-            `kments-login-code="${realId}"; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`
-        )
-        response.status(200).json({status: 200})
+        platform.setCookie(`kments-login-code=${realId}; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
+        platform.sendJson(200, {status: 200})
     } else {
-        if (await connectRedis().exists(redisKey))
-            return response.status(200).json({
+        const redis = connectRedis()
+        if (await redis.exists(redisKey))
+            return platform.sendJson(200, {
                 status: 429,
                 msg: '请求发送验证码过于频繁'
             })
         const code = generateCode(6)
         const sendResult = await sendAuthCodeTo(email, {code, msg: '身份认证', name: body.name})
-        if (!sendResult) return response.status(200).json({status: 500})
-        await connectRedis().setex(redisKey, 60, code)
-        response.status(200).json({status: 200})
+        if (!sendResult)
+            return platform.sendJson(200, {status: 500})
+        await redis.setex(redisKey, 600, calcHash('md5', code))
+        platform.sendJson(200, {status: 200})
     }
 }
 
