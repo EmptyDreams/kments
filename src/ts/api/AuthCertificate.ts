@@ -1,4 +1,3 @@
-import {VercelRequest} from '@vercel/node'
 import crypto from 'crypto'
 import {connectDatabase} from '../DatabaseOperator'
 import {sendAuthCodeTo} from '../Email'
@@ -91,24 +90,24 @@ function generateCode(length: number): string {
 }
 
 /** 验证用户是否是指定用户 */
-export async function verifyAuth(request: VercelRequest, email: string): Promise<boolean> {
-    const cookies = request.cookies
-    if (!('kments-login-code' in cookies)) return false
+export async function verifyAuth(platform: KmentsPlatform, email: string): Promise<boolean> {
+    const verify = platform.readCookie('kments-login-code')
+    if (!verify) return false
     const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOne({
         email: email
     }, {projection: {verify: true}})
     if (!(doc && 'verify' in doc)) return false
-    return doc.verify == cookies['kments-login-code']
+    return doc.verify == verify
 }
 
 /** 获取当前用户的邮箱 */
-export async function getAuthEmail(request: VercelRequest): Promise<string | undefined> {
-    const cookies = request.cookies
-    if (!('kments-login-code' in cookies)) return undefined
+export async function getAuthEmail(platform: KmentsPlatform): Promise<string | undefined> {
+    const verify = platform.readCookie('kments-login-code')
+    if (!verify) return undefined
     const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOne(
-        {verify: cookies['kments-login-code']},
+        {verify},
         {projection: {email: true}}
     )
     if (!(doc && 'email' in doc)) return undefined

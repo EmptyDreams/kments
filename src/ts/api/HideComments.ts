@@ -1,47 +1,34 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import {ObjectId} from 'mongodb'
-import {getAuthEmail} from '../src/ts/api/AuthCertificate'
-import {verifyAdminStatus} from './admin-certificate'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {connectRedis} from '../src/ts/RedisOperator'
-import {initRequest, rebuildRecentComments} from '../src/ts/utils'
+import {connectDatabase} from '../DatabaseOperator'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis} from '../RedisOperator'
+import {initRequest, rebuildRecentComments} from '../utils'
+import {verifyAdminStatus} from './AdminCertificate'
+import {getAuthEmail} from './AuthCertificate'
 
-// noinspection JSUnusedGlobalSymbols
-/**
- * 隐藏指定的评论，管理员与用户均可使用
- *
- * 请求方法：PUT (with json and cookie)
- *
- * 参数列表如下：
- *
- * + page - 页面 pathname
- * + values - 要隐藏的评论的 ID
- */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(request, response, 'hide', 'PUT')
+export async function hideComments(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'hide', 'PUT')
     if (!checkResult) return
-    let {page, values} = request.body
-    if (!(values && page)) return response.status(200).json({
+    let {page, values} = platform.readBodyAsJson()
+    if (!(values && page)) return platform.sendJson(200, {
         status: 400,
         msg: 'page 或 values 值缺失'
     })
     const {config} = checkResult
     const pageId = `c-${config.unique(page)}`
-    let count: number
-    if (await verifyAdminStatus(request)) {
-        count = await hideCommentsWithAdmin(pageId, values)
+    let fails: number
+    if (await verifyAdminStatus(platform)) {
+        fails = await hideCommentsWithAdmin(pageId, values)
     } else {
-        const email = await getAuthEmail(request)
-        if (!email) return response.status(200).json({
+        const email = await getAuthEmail(platform)
+        if (!email) return platform.sendJson(200, {
             status: 401,
             msg: '未认证用户无权进行隐藏操作'
         })
-        count = await hideCommentsWithUser(pageId, values, email)
+        fails = await hideCommentsWithUser(pageId, values, email)
     }
     await updateRecently(values)
-    response.status(200).json({
-        status: 200, fails: count
-    })
+    platform.sendJson(200, {status: 200, fails})
 }
 
 async function updateRecently(values: string[]) {
