@@ -1,35 +1,26 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import {AnyBulkWriteOperation, Db, ObjectId} from 'mongodb'
-import {verifyAdminStatus} from './admin-certificate'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {CommentBody} from './post-comment'
-import {connectRedis} from '../src/ts/RedisOperator'
-import {initRequest, rebuildRecentComments} from '../src/ts/utils'
+import {CommentBody} from '../../../api/post-comment'
+import {connectDatabase} from '../DatabaseOperator'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis} from '../RedisOperator'
+import {initRequest, rebuildRecentComments} from '../utils'
+import {verifyAdminStatus} from './AdminCertificate'
 
-// noinspection JSUnusedGlobalSymbols
 /**
  * 删除评论
  *
- * 请求方法：DELETE (with json and cookie)
- *
- * body 值应当为一个对象，表明要删除的评论的 ID 和其所在页面的 ID，删除评论时同时删除子评论，例如：
- *
- * ```
- * {
- *  pagePathname0: ['id0', 'id1', ...],
- *  pagePathname1: ...,
- *  ...
- * }
- * ```
+ * DELETE: json {
+ *      pagePathname0: ['id0', 'id1', ...],
+ *      ...,
+ * }（`key` 表示要删除的 ID 所在的页面的 pathname，数组中的元素是评论的 ID）
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'delete', 'DELETE'
-    )
+export async function deleteComments(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'delete', 'DELETE')
     if (!checkResult) return
-    if (!await verifyAdminStatus(request)) return response.status(403).end()
+    if (!await verifyAdminStatus(platform))
+        return platform.sendNull(403)
     const {config} = checkResult
-    const body = request.body
+    const body = platform.readBodyAsJson()
     const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
     const oldLength = recentComments.length
     const db = connectDatabase()
@@ -39,7 +30,7 @@ export default async function (request: VercelRequest, response: VercelResponse)
     )
     if (recentComments.length != oldLength)
         await rebuildRecentComments(recentComments)
-    response.status(200).end()
+    platform.sendNull(200)
 }
 
 async function deleteCommentsFromCollection(
