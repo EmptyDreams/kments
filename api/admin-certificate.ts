@@ -1,6 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {connectRedis} from './lib/RedisOperator'
-import {calcHash, initRequest, isDev} from './lib/utils'
+import {connectRedis} from '../src/ts/RedisOperator'
+import {calcHash, initRequest, isDev} from '../src/ts/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

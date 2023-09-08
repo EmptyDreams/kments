@@ -1,29 +1,11 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import * as crypto from 'crypto'
-import {findOnVercel} from 'ip-china-location'
 import {Collection, ObjectId} from 'mongodb'
-import path from 'path'
 import {KmentsConfig, loadConfig, RateLimitKeys} from './ConfigLoader'
 import {connectDatabase} from './DatabaseOperator'
+import {KmentsPlatform} from './KmentsPlatform'
 import {connectRedis, execPipeline, ipCount} from './RedisOperator'
 
 export const isDev = process.env['VERCEL_ENV'] == 'development'
-
-/** 获取用户 IP 地址 */
-export function getUserIp(request: VercelRequest): string | undefined {
-    const helper = () => {
-        const list = ['x-forwarded-for', 'x-real-ip', 'x-client-ip']
-        for (let key of list) {
-            const result = request.headers[key]
-            if (result)
-                return Array.isArray(result) ? result[0] : result
-        }
-        return request.socket.remoteAddress
-    }
-    const result = helper()
-    if (result == '127.0.0.1' || result == '::1') return undefined
-    return result
-}
 
 const blackList = new Set<string>()
 
@@ -92,40 +74,40 @@ export interface RequestInfo {
 
 /** 对请求进行合法性检查 */
 export async function initRequest(
-    request: VercelRequest, response: VercelResponse,
+    platform: KmentsPlatform,
     rateLimitKey: RateLimitKeys, ...allowMethods: string[]
 ): Promise<false | RequestInfo> {
     const config = loadConfig()
     if (isDev) {
-        response.setHeader('Access-Control-Allow-Origin', `http://${process.env['VERCEL_URL']}`)
+        platform.setHeader('Access-Control-Allow-Origin', `http://${process.env['VERCEL_URL']}`)
         return {location: '中国', ip: '::1', count: 0, config}
     }
     const url = config.admin.domUrl.href
-    if (!request.headers.referer?.startsWith(url)) {
-        response.status(403).end()
+    if (!platform.referer?.startsWith(url)) {
+        platform.sendNull(403)
         return false
     }
-    if (!allowMethods.includes(request.method!)) {
-        response.status(200).json({
+    if (!allowMethods.includes(platform.method)) {
+        platform.sendJson(200, {
             status: 405,
             msg: `仅支持 ${allowMethods} 访问`
         })
         return false
     }
-    const ip = getUserIp(request)
+    const ip = platform.ip
     if (!ip) {
-        response.status(200).json({
+        platform.sendJson(200, {
             status: 400,
             msg: `缺失 IP 值`
         })
         return false
     }
-    let location = findOnVercel(request, path.resolve('./', 'private', 'region.bin'), ip)
+    let location = platform.location
     const limitConfig = config.rateLimit?.[rateLimitKey]
     let count = -1
     if (limitConfig) {
         if (!location && limitConfig.region != 'none') {
-            response.status(200).json({
+            platform.sendJson(200, {
                 status: 403,
                 msg: '定位失败，禁止未知区域的用户访问'
             })
@@ -134,7 +116,7 @@ export async function initRequest(
         switch (limitConfig.region) {
             case "main":
                 if (!location || ['澳门', '香港', '台湾'].includes(location)) {
-                    response.status(200).json({
+                    platform.sendJson(200, {
                         status: 403,
                         msg: `仅允许大陆用户访问`
                     })
@@ -143,7 +125,7 @@ export async function initRequest(
                 break
             case "china":
                 if (!location) {
-                    response.status(200).json({
+                    platform.sendJson(200, {
                         status: 403,
                         msg: '禁止国外用户访问'
                     })
@@ -154,12 +136,12 @@ export async function initRequest(
         if (!location) location = '国外'
         const [status, amount] = await rateLimit(rateLimitKey, ip, config)
         if (status != 200) {
-            response.status(status).end()
+            platform.sendNull(status)
             return false
         }
         count = amount
     }
-    response.setHeader('Access-Control-Allow-Origin', url)
+    platform.setHeader('Access-Control-Allow-Origin', url)
     return {location, count, ip, config}
 }
 

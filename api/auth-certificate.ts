@@ -1,9 +1,9 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import * as crypto from 'crypto'
-import {connectDatabase} from './lib/DatabaseOperator'
-import {sendAuthCodeTo} from './lib/Email'
-import {connectRedis} from './lib/RedisOperator'
-import {calcHash, checkEmail, initRequest, isDev} from './lib/utils'
+import {connectDatabase} from '../src/ts/DatabaseOperator'
+import {sendAuthCodeTo} from '../src/ts/Email'
+import {connectRedis} from '../src/ts/RedisOperator'
+import {calcHash, checkEmail, initRequest, isDev} from '../src/ts/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

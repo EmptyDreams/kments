@@ -3,8 +3,8 @@ import {findOnVercel} from 'ip-china-location'
 import path from 'path'
 import * as zlib from 'zlib'
 
-export class KmentsHeader {
-    constructor(public platform: KmentsPlatform, public request: any, public response: any) {}
+export class KmentsPlatform {
+    constructor(public platform: KmentsPlatformType, public request: any, public response: any) {}
     private _ip: string | undefined
     /** 获取客户端请求方法 */
     get method(): string {
@@ -33,7 +33,7 @@ export class KmentsHeader {
     }
     get location(): string | undefined {
         switch (this.platform) {
-            case KmentsPlatform.VERCEL:
+            case KmentsPlatformType.VERCEL:
                 return findOnVercel(this.request, path.resolve('./', 'private', 'region.bin'), this.ip)
             default:
                 throw `unknowns platform: ${this.platform}`
@@ -42,7 +42,7 @@ export class KmentsHeader {
     /** 读取一个请求头信息 */
     readHeader(key: string): string | string[] | undefined {
         switch (this.platform) {
-            case KmentsPlatform.VERCEL:
+            case KmentsPlatformType.VERCEL:
                 return (this.request as VercelRequest).headers[key]
             default:
                 throw `unknowns platform: ${this.platform}`
@@ -51,7 +51,7 @@ export class KmentsHeader {
     /** 向响应头写入一个 header */
     setHeader(key: string, values: string | readonly string[] | number) {
         switch (this.platform) {
-            case KmentsPlatform.VERCEL:
+            case KmentsPlatformType.VERCEL:
                 (this.response as VercelResponse).setHeader(key, values)
                 break
             default:
@@ -61,7 +61,7 @@ export class KmentsHeader {
     /** 读取一个 cookie */
     raedCookie(key: string): string | undefined {
         switch (this.platform) {
-            case KmentsPlatform.VERCEL:
+            case KmentsPlatformType.VERCEL:
                 return (this.request as VercelRequest).cookies[key]
             default:
                 throw `unknowns platform: ${this.platform}`
@@ -84,7 +84,7 @@ export class KmentsHeader {
             }
         }
         switch (this.platform) {
-            case KmentsPlatform.VERCEL:
+            case KmentsPlatformType.VERCEL:
                 (this.response as VercelResponse).status(statusCode).send(zipped)
                 break
             default:
@@ -99,7 +99,7 @@ export class KmentsHeader {
     /** 发送一个空响应 */
     sendNull(statusCode: number) {
         switch (this.platform) {
-            case KmentsPlatform.VERCEL:
+            case KmentsPlatformType.VERCEL:
                 (this.response as VercelResponse).status(statusCode).end()
                 break
             default:
@@ -109,6 +109,6 @@ export class KmentsHeader {
 }
 
 /** 平台名称 */
-export enum KmentsPlatform {
+export enum KmentsPlatformType {
     VERCEL
 }

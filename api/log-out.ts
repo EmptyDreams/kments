@@ -1,7 +1,7 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {loadConfig} from './lib/ConfigLoader'
-import {connectDatabase} from './lib/DatabaseOperator'
-import {initRequest, isDev} from './lib/utils'
+import {loadConfig} from '../src/ts/ConfigLoader'
+import {connectDatabase} from '../src/ts/DatabaseOperator'
+import {initRequest, isDev} from '../src/ts/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

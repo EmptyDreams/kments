@@ -2,9 +2,9 @@ import {VercelRequest, VercelResponse} from '@vercel/node'
 import {ObjectId} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
 import {getAuthEmail} from './auth-certificate'
-import {connectDatabase} from './lib/DatabaseOperator'
-import {connectRedis} from './lib/RedisOperator'
-import {initRequest, rebuildRecentComments} from './lib/utils'
+import {connectDatabase} from '../src/ts/DatabaseOperator'
+import {connectRedis} from '../src/ts/RedisOperator'
+import {initRequest, rebuildRecentComments} from '../src/ts/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

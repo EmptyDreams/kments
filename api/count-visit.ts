@@ -1,6 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
-import {connectRedis, execPipeline} from './lib/RedisOperator'
-import {initRequest} from './lib/utils'
+import {connectRedis, execPipeline} from '../src/ts/RedisOperator'
+import {initRequest} from '../src/ts/utils'
 
 const ipRecord = new Map<string, Set<string>>()
 const globalIpRecord = new Set<string>()

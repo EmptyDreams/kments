@@ -1,10 +1,10 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
-import {loadConfig} from './lib/ConfigLoader'
-import {connectDatabase} from './lib/DatabaseOperator'
+import {loadConfig} from '../src/ts/ConfigLoader'
+import {connectDatabase} from '../src/ts/DatabaseOperator'
 import {CommentBody} from './post-comment'
-import {initRequest} from './lib/utils'
+import {initRequest} from '../src/ts/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

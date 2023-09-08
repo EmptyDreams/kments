@@ -1,10 +1,10 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {AnyBulkWriteOperation, Db, ObjectId} from 'mongodb'
 import {verifyAdminStatus} from './admin-certificate'
-import {connectDatabase} from './lib/DatabaseOperator'
+import {connectDatabase} from '../src/ts/DatabaseOperator'
 import {CommentBody} from './post-comment'
-import {connectRedis} from './lib/RedisOperator'
-import {initRequest, rebuildRecentComments} from './lib/utils'
+import {connectRedis} from '../src/ts/RedisOperator'
+import {initRequest, rebuildRecentComments} from '../src/ts/utils'
 
 // noinspection JSUnusedGlobalSymbols
 /**

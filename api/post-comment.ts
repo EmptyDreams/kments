@@ -1,11 +1,11 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, ObjectId, Document} from 'mongodb'
 import * as url from 'url'
-import {loadConfig} from './lib/ConfigLoader'
-import {connectDatabase} from './lib/DatabaseOperator'
-import {sendNotice, sendReplyTo} from './lib/Email'
-import {connectRedis, execPipeline} from './lib/RedisOperator'
-import {calcHash, checkEmail, initRequest} from './lib/utils'
+import {loadConfig} from '../src/ts/ConfigLoader'
+import {connectDatabase} from '../src/ts/DatabaseOperator'
+import {sendNotice, sendReplyTo} from '../src/ts/Email'
+import {connectRedis, execPipeline} from '../src/ts/RedisOperator'
+import {calcHash, checkEmail, initRequest} from '../src/ts/utils'
 import * as HTMLParser from 'fast-html-parser'
 
 // noinspection JSUnusedGlobalSymbols
