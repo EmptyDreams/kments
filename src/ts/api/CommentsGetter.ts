@@ -1,18 +1,16 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Collection, Document, Filter} from 'mongodb'
-import {verifyAdminStatus} from './admin-certificate'
-import {loadConfig} from '../src/ts/ConfigLoader'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {CommentBody} from './post-comment'
-import {initRequest} from '../src/ts/utils'
+import {CommentBody} from '../../../api/post-comment'
+import {loadConfig} from '../ConfigLoader'
+import {connectDatabase} from '../DatabaseOperator'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {initRequest} from '../utils'
+import {verifyAdminStatus} from './AdminCertificate'
 
 // noinspection JSUnusedGlobalSymbols
 /**
  * 获取指定范围内的评论
  *
- * 请求方法：GET
- *
- * 请求参数列表：
+ * GET:
  *
  * + `page`: 页面 pathname
  * + `start`: 起始下标（从零开始，缺省 0）
@@ -20,15 +18,13 @@ import {initRequest} from '../src/ts/utils'
  * + `truth`: 是否显示隐藏的评论，仅管理员身份有效（缺省 0）[0-不显示，1-显示，2-只显示隐藏评论]
  * + `id`: 父评论 ID，当填写该字段后表明获取指定评论的子评论（可空）
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'gets', 'GET'
-    )
+export async function getComments(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'gets', 'GET')
     if (!checkResult) return
     // 提取和检查请求参数信息
-    const info = await extractInfo(request)
+    const info = await extractInfo(platform)
     if (typeof info == 'string')
-        return response.status(200).json({
+        return platform.sendJson(200, {
             status: 400,
             msg: info
         })
@@ -48,14 +44,14 @@ export default async function (request: VercelRequest, response: VercelResponse)
         readCommentsFromDb(collection, filter).skip(info.start).limit(info.len).toArray(),
         countCursor.hasNext().finally(() => countCursor.close())
     ])
-    response.status(200).json({
+    platform.sendJson(200, {
         status: 200, next,
         data: list.map(it => extractReturnDate(it as CommentBody))
     })
 }
 
-async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
-    const searchString = request.url?.substring(request.url!.indexOf('?') + 1)
+async function extractInfo(platform: KmentsPlatform): Promise<GetInfo | string> {
+    const searchString = platform.url?.substring(platform.url!.indexOf('?') + 1)
     if (!searchString) return '缺少 URL 参数'
     const params = new URLSearchParams(searchString)
     let pageUrl = params.get('page')
@@ -66,7 +62,7 @@ async function extractInfo(request: VercelRequest): Promise<GetInfo | string> {
     let truth = 0
     const truthParam = params.get('truth')
     if (truthParam == '1' || truthParam == '2') {
-        const isAdmin = await verifyAdminStatus(request)
+        const isAdmin = await verifyAdminStatus(platform)
         if (isAdmin) truth = Number.parseInt(truthParam)
     }
     return {

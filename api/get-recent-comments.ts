@@ -1,6 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Document, ObjectId, WithId} from 'mongodb'
-import {extractReturnDate, readCommentsFromDb} from './get-comments'
+import {extractReturnDate, readCommentsFromDb} from '../src/ts/api/CommentsGetter'
 import {connectDatabase} from '../src/ts/DatabaseOperator'
 import {CommentBody} from './post-comment'
 import {connectRedis} from '../src/ts/RedisOperator'

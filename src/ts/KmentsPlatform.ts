@@ -18,6 +18,9 @@ export class KmentsPlatform {
     get origin(): string | undefined {
         return this.readHeader('origin') as string | undefined
     }
+    get url(): string | undefined {
+        return this.request.url
+    }
     get ip(): string | undefined {
         if (this._ip) return this._ip
         const list = ['x-forwarded-for', 'x-real-ip', 'x-client-ip']
