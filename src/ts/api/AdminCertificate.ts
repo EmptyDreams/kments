@@ -1,6 +1,6 @@
-import {KmentsPlatform} from './KmentsPlatform'
-import {connectRedis} from './RedisOperator'
-import {calcHash, initRequest, isDev} from './utils'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis} from '../RedisOperator'
+import {calcHash, initRequest, isDev} from '../utils'
 
 // noinspection JSUnusedGlobalSymbols
 export async function certifyAdmin(platform: KmentsPlatform) {
