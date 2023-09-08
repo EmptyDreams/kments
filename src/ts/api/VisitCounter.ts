@@ -58,3 +58,24 @@ export async function countVisit(platform: KmentsPlatform) {
         data: result[0]
     })
 }
+
+// noinspection JSUnusedGlobalSymbols
+/**
+ * 获取指定所有页面的访问量，不会增加这些页面的计数
+ *
+ * POST: json as string[]（表示要获取的页面的 pathname）
+ */
+export async function getPagesVisit(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'count', 'POST')
+    if (!checkResult) return
+    const {config} = checkResult
+    const body = platform.readBodyAsArray<string>()
+    const pipeline = connectRedis().pipeline()
+    for (let pathname of body) {
+        pipeline.get(`count:${config.unique(pathname)}`)
+    }
+    platform.sendJson(200, {
+        status: 200,
+        data: await execPipeline(pipeline)
+    })
+}

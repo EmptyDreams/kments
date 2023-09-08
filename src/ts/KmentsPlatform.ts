@@ -56,6 +56,13 @@ export class KmentsPlatform {
         return result
     }
 
+    readBodyAsArray<T>(): T[] {
+        const result = this.body
+        if (!Array.isArray(result))
+            throw 'body is not array'
+        return result
+    }
+
     readHeader(key: string): string | string[] | undefined {
         switch (this.platform) {
             case KmentsPlatformType.VERCEL:
