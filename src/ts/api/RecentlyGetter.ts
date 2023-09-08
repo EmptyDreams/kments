@@ -1,34 +1,30 @@
-import {VercelRequest, VercelResponse} from '@vercel/node'
 import {Document, ObjectId, WithId} from 'mongodb'
-import {extractReturnDate, readCommentsFromDb} from '../src/ts/api/CommentsGetter'
-import {connectDatabase} from '../src/ts/DatabaseOperator'
-import {CommentBody} from './post-comment'
-import {connectRedis} from '../src/ts/RedisOperator'
-import {initRequest} from '../src/ts/utils'
+import {CommentBody} from '../../../api/post-comment'
+import {connectDatabase} from '../DatabaseOperator'
+import {KmentsPlatform} from '../KmentsPlatform'
+import {connectRedis} from '../RedisOperator'
+import {initRequest} from '../utils'
+import {extractReturnDate, readCommentsFromDb} from './CommentsGetter'
 
 // noinspection JSUnusedGlobalSymbols
 /**
- * 获取最新的评论
+ * 获取最新评论列表
  *
- * 请求方法：GET
+ * GET:
  *
- * 参数解释：
- *
- * + limit - 数量限制（最大为 10，缺省 5）
+ * + limit - 数量限制（最大为 10，缺省为 5）
  */
-export default async function (request: VercelRequest, response: VercelResponse) {
-    const checkResult = await initRequest(
-        request, response, 'gets', 'GET'
-    )
+export async function getRecently(platform: KmentsPlatform) {
+    const checkResult = await initRequest(platform, 'gets', 'GET')
     if (!checkResult) return
-    const info = extractInfo(request)
+    const info = extractInfo(platform)
     const list = await connectRedis().zrevrangebyscore(
         'recentComments',
         '+inf', 10,
         'LIMIT', 0, info.limit - 1
     )
     if (!list || list.length == 0)
-        return response.status(200).json({
+        return platform.sendJson(200, {
             status: 200,
             data: []
         })
@@ -56,14 +52,14 @@ export default async function (request: VercelRequest, response: VercelResponse)
             list.map(it => extractReturnDate(it as CommentBody))
     )
     resultList.sort((a, b) => a._id.getTimestamp().getTime() - b._id.getTimestamp().getTime())
-    response.status(200).json({
+    platform.sendJson(200, {
         status: 200,
         data: resultList
     })
 }
 
-function extractInfo(request: VercelRequest): RequestInfo {
-    const url = request.url!
+function extractInfo(platform: KmentsPlatform): RequestInfo {
+    const url = platform.url!
     const splitIndex = url.indexOf('?')
     if (splitIndex < 0) return {limit: 5}
     const searchString = url.substring(splitIndex + 1)
