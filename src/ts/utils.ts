@@ -83,7 +83,7 @@ export async function initRequest(
         return {location: '中国', ip: '::1', count: 0, config}
     }
     const url = config.admin.domUrl.href
-    if (!platform.referer?.startsWith(url)) {
+    if (!platform.referer?.startsWith(url) || !platform.origin?.startsWith(url)) {
         platform.sendNull(403)
         return false
     }
