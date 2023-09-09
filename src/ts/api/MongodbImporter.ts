@@ -31,6 +31,7 @@ export async function importMongodb(platform: KmentsPlatform) {
     const db = connectDatabase(mongodb)
     await importTwikooCommentData(db)
     await importTwikooCountData(db)
+    platform.sendNull(200)
 }
 
 /** 导入 twikoo 评论数据 */
