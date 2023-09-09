@@ -124,9 +124,12 @@ export class KmentsPlatform {
     }
 
     /** 发送一个 JSON 数据 */
-    sendJson(statusCode: number, data: any) {
+    sendJson(statusCode: number, data?: any) {
         this.setHeader('Content-Type', 'application/json')
-        this.sendText(statusCode, JSON.stringify(data))
+        this.sendText(statusCode, JSON.stringify({
+            status: statusCode,
+            ...data
+        }))
     }
 
     /** 发送一个空响应 */

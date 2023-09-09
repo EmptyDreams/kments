@@ -14,9 +14,9 @@ export async function logoutKments(platform: KmentsPlatform) {
     if (!checkResult) return
     const code = platform.readCookie('kments-login-code')
     if (!code)
-        return platform.sendJson(200, {status: 204})
+        return platform.sendJson(204)
     await connectDatabase().collection('login-verify').deleteOne({verify: code})
     const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
     platform.setCookie(`kments-login-code=""; Max-Age=-1; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
-    platform.sendJson(200, {status: 200})
+    platform.sendJson(200)
 }

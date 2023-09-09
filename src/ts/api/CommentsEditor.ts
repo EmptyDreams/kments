@@ -21,10 +21,7 @@ export async function updateComment(platform: KmentsPlatform) {
     const {config, location} = checkResult
     const {page, id, content} = platform.readBodyAsJson()
     if (config.commentChecker.content?.(content))
-        return platform.sendJson(200, {
-            status: 403,
-            msg: '评论包含非法内容'
-        })
+        return platform.sendJson(403, {msg: '评论包含非法内容'})
     const collectionName = `c-${config.unique(page)}`
     const db = connectDatabase()
     if (await verifyAdminStatus(platform)) {
@@ -32,15 +29,12 @@ export async function updateComment(platform: KmentsPlatform) {
             _id: new ObjectId(id)
         }, {$set: {content}})
         if (result.modifiedCount == 1)
-            platform.sendJson(200, {status: 200})
+            platform.sendJson(200)
         else
-            platform.sendJson(200, {status: 404})
+            platform.sendJson(404)
     } else {
         const email = await getAuthEmail(platform)
-        if (!email) return platform.sendJson(200, {
-            status: 401,
-            msg: '未认证用户禁止修改评论内容'
-        })
+        if (!email) return platform.sendJson(401, {msg: '未认证用户禁止修改评论内容'})
         const commentId = new ObjectId(id)
         const publishTime = Math.floor(commentId.getTimestamp().getTime() / 1000)
         const result = await db.collection(collectionName)
@@ -52,8 +46,8 @@ export async function updateComment(platform: KmentsPlatform) {
                 }, {$set: {content}}
             )
         if (result.modifiedCount == 1)
-            platform.sendJson(200, {status: 200})
+            platform.sendJson(200)
         else
-            platform.sendJson(200, {status: 423})
+            platform.sendJson(423)
     }
 }

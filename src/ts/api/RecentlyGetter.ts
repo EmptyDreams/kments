@@ -24,10 +24,7 @@ export async function getRecently(platform: KmentsPlatform) {
         'LIMIT', 0, info.limit - 1
     )
     if (!list || list.length == 0)
-        return platform.sendJson(200, {
-            status: 200,
-            data: []
-        })
+        return platform.sendJson(200, {data: []})
     const db = connectDatabase()
     const map = new Map<string, ObjectId[]>()
     list.forEach(it => {
@@ -52,10 +49,7 @@ export async function getRecently(platform: KmentsPlatform) {
             list.map(it => extractReturnDate(it as CommentBody))
     )
     resultList.sort((a, b) => a._id.getTimestamp().getTime() - b._id.getTimestamp().getTime())
-    platform.sendJson(200, {
-        status: 200,
-        data: resultList
-    })
+    platform.sendJson(200, {data: resultList})
 }
 
 function extractInfo(platform: KmentsPlatform): RequestInfo {

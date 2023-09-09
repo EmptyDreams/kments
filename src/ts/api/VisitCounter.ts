@@ -20,16 +20,10 @@ export async function countVisit(platform: KmentsPlatform) {
     const redis = connectRedis()
     if (!page) {
         if (globalIpRecord.has(ip)) {
-            platform.sendJson(200, {
-                status: 200,
-                data: await redis.get(globalKey)
-            })
+            platform.sendJson(200, {data: await redis.get(globalKey)})
         } else {
             globalIpRecord.add(ip)
-            platform.sendJson(200, {
-                status: 200,
-                data: await redis.incr(globalKey)
-            })
+            platform.sendJson(200, {data: await redis.incr(globalKey)})
         }
         return
     }
@@ -38,10 +32,7 @@ export async function countVisit(platform: KmentsPlatform) {
     const key = `count:${pageId}`
     if (record) {
         if (record.has(ip)) {
-            return platform.sendJson(200, {
-                status: 200,
-                data: await redis.get(key)
-            })
+            return platform.sendJson(200, {data: await redis.get(key)})
         } else record.add(ip)
     } else {
         record = new Set<string>()
@@ -53,10 +44,7 @@ export async function countVisit(platform: KmentsPlatform) {
     if (!globalIpRecord.has(ip))
         pipeline.incr(globalKey)
     const result = await execPipeline(pipeline)
-    platform.sendJson(200, {
-        status: 200,
-        data: result[0]
-    })
+    platform.sendJson(200, {data: result[0]})
 }
 
 // noinspection JSUnusedGlobalSymbols
@@ -74,8 +62,5 @@ export async function getPagesVisit(platform: KmentsPlatform) {
     for (let pathname of body) {
         pipeline.get(`count:${config.unique(pathname)}`)
     }
-    platform.sendJson(200, {
-        status: 200,
-        data: await execPipeline(pipeline)
-    })
+    platform.sendJson(200, {data: await execPipeline(pipeline)})
 }

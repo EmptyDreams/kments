@@ -10,10 +10,8 @@ export async function hideComments(platform: KmentsPlatform) {
     const checkResult = await initRequest(platform, 'hide', 'PUT')
     if (!checkResult) return
     let {page, values} = platform.readBodyAsJson()
-    if (!(values && page)) return platform.sendJson(200, {
-        status: 400,
-        msg: 'page 或 values 值缺失'
-    })
+    if (!(values && page))
+        return platform.sendJson(400, {msg: 'page 或 values 值缺失'})
     const {config} = checkResult
     const pageId = `c-${config.unique(page)}`
     let fails: number
@@ -28,7 +26,7 @@ export async function hideComments(platform: KmentsPlatform) {
         fails = await hideCommentsWithUser(pageId, values, email)
     }
     await updateRecently(values)
-    platform.sendJson(200, {status: 200, fails})
+    platform.sendJson(200, {fails})
 }
 
 async function updateRecently(values: string[]) {

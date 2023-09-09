@@ -29,20 +29,11 @@ export async function postComment(platform: KmentsPlatform) {
     const {ip, location} = checkResult
     // 提取评论内容
     const {body, pageId, pageTitle, pageUrl, msg} = extractInfo(platform, ip, location!) as any
-    if (msg) {
-        return platform.sendJson(200, {
-            status: 400,
-            msg: msg
-        })
-    }
+    if (msg) return platform.sendJson(400, {msg})
     // 检查是否允许发布
     const commentChecked = checkComment(body, pageId)
-    if (typeof commentChecked === 'string') {
-        return platform.sendJson(200, {
-            status: 403,
-            message: commentChecked
-        })
-    }
+    if (typeof commentChecked === 'string')
+        return platform.sendJson(403, {msg: commentChecked})
     const collection = connectDatabase().collection<CommentBody>(pageId)
     Promise.all([
         collection.insertOne(body),
@@ -51,7 +42,6 @@ export async function postComment(platform: KmentsPlatform) {
         noticeMaster(body, pageTitle, pageUrl)
     ]).then(() => {
         platform.sendJson(200, {
-            status: 200,
             data: {
                 id: body._id.toHexString(),
                 location: body.location

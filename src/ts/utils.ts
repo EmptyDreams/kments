@@ -88,18 +88,12 @@ export async function initRequest(
         return false
     }
     if (!allowMethods.includes(platform.method)) {
-        platform.sendJson(200, {
-            status: 405,
-            msg: `仅支持 ${allowMethods} 访问`
-        })
+        platform.sendJson(405, {msg: `仅支持 ${allowMethods} 访问`})
         return false
     }
     const ip = platform.ip
     if (!ip) {
-        platform.sendJson(200, {
-            status: 400,
-            msg: `缺失 IP 值`
-        })
+        platform.sendJson(400, {msg: `缺失 IP 值`})
         return false
     }
     let location = platform.location
@@ -107,28 +101,19 @@ export async function initRequest(
     let count = -1
     if (limitConfig) {
         if (!location && limitConfig.region != 'none') {
-            platform.sendJson(200, {
-                status: 403,
-                msg: '定位失败，禁止未知区域的用户访问'
-            })
+            platform.sendJson(403, {msg: '定位失败，禁止未知区域的用户访问'})
             return false
         }
         switch (limitConfig.region) {
             case "main":
                 if (!location || ['澳门', '香港', '台湾'].includes(location)) {
-                    platform.sendJson(200, {
-                        status: 403,
-                        msg: `仅允许大陆用户访问`
-                    })
+                    platform.sendJson(403, {msg: `仅允许大陆用户访问`})
                     return false
                 }
                 break
             case "china":
                 if (!location) {
-                    platform.sendJson(200, {
-                        status: 403,
-                        msg: '禁止国外用户访问'
-                    })
+                    platform.sendJson(403, {msg: '禁止国外用户访问'})
                     return false
                 }
                 break

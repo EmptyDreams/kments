@@ -24,10 +24,7 @@ export async function getComments(platform: KmentsPlatform) {
     // 提取和检查请求参数信息
     const info = await extractInfo(platform)
     if (typeof info == 'string')
-        return platform.sendJson(200, {
-            status: 400,
-            msg: info
-        })
+        return platform.sendJson(400, {msg: info})
     const filter: Filter<Document> = {}
     filter.reply = info.reply ? info.reply : {$exists: false}
     switch (info.truth) {
@@ -45,7 +42,7 @@ export async function getComments(platform: KmentsPlatform) {
         countCursor.hasNext().finally(() => countCursor.close())
     ])
     platform.sendJson(200, {
-        status: 200, next,
+        next,
         data: list.map(it => extractReturnDate(it as CommentBody))
     })
 }
