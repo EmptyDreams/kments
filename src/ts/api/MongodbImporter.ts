@@ -4,7 +4,7 @@ import {loadConfig} from '../ConfigLoader'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
-import {calcHash, initRequest} from '../utils'
+import {calcHash, initRequest, rebuildRecentComments} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 
 export type DataType = 'twikoo'
@@ -29,8 +29,11 @@ export async function importMongodb(platform: KmentsPlatform) {
     if (!await verifyAdminStatus(platform))
         return platform.sendJson(401)
     const db = connectDatabase(mongodb)
-    await importTwikooCommentData(db)
-    await importTwikooCountData(db)
+    await Promise.all([
+        importTwikooCommentData(db),
+        importTwikooCountData(db)
+    ])
+    await rebuildRecentComments()
     platform.sendNull(200)
 }
 
