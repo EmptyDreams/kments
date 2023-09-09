@@ -55,7 +55,7 @@ async function importTwikooCommentData(db: Db) {
                     rid: true, pid: true, created: true
                 }
             }
-        ).limit(10)
+        ).limit(50)
         const subCounts = new Map<string, [ObjectId, number]>()
         while (true) {
             const array = await cursor.toArray()
