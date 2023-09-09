@@ -79,7 +79,7 @@ async function importTwikooCommentData(db: Db) {
             if (urlMapper)
                 document.url = urlMapper('twikoo', document.url)
             document.mapId = new ObjectId(document.created)
-            readCounts(document._id.toHexString())[0] = document.mapId
+            readCounts(document._id)[0] = document.mapId
             if (document.rid) {
                 ++readCounts(document.rid)[1]
                 if (document.rid != document.pid) {
@@ -88,20 +88,16 @@ async function importTwikooCommentData(db: Db) {
             }
         }
         await newCollection.insertMany(array.map(document => ({
-            insertOne: {
-                document: {
-                    _id: document.mapId,
-                    name: document.nick,
-                    email: document.mail,
-                    emailMd5: calcHash('md5', document.mail.toLowerCase()),
-                    link: document.link,
-                    ip: document.ip,
-                    location: findIPv4(document.ip) ?? '未知',
-                    reply: document.rid,
-                    at: document.at.map((it: string) => subCounts.get(it)?.[0] || undefined),
-                    subCount: subCounts.get(document._id)?.[1] || undefined
-                }
-            }
+            _id: document.mapId,
+            name: document.nick,
+            email: document.mail,
+            emailMd5: calcHash('md5', document.mail.toLowerCase()),
+            link: document.link,
+            ip: document.ip,
+            location: findIPv4(document.ip) ?? '未知',
+            reply: document.rid,
+            at: document.at?.map((it: string) => subCounts.get(it)?.[0] || undefined),
+            subCount: subCounts.get(document._id)?.[1] || undefined
         })))
     }))
 }
