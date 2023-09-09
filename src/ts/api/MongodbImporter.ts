@@ -97,6 +97,7 @@ async function importTwikooCommentData(db: Db) {
                 email: document.mail,
                 emailMd5: calcHash('md5', document.mail.toLowerCase()),
                 link: document.link,
+                content: document.comment,
                 ip: document.ip,
                 location: findIPv4(document.ip) ?? '未知',
                 reply: document.rid,
