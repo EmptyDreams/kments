@@ -1,4 +1,4 @@
 [submodule "core"]
 	path = core
 	url = git@github.com:EmptyDreams/kments.git
-	branch = common
+	branch = core
