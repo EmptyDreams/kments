@@ -4,7 +4,7 @@ import {loadConfig} from '../ConfigLoader'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
-import {initRequest} from '../utils'
+import {calcHash, initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 
 export type DataType = 'twikoo'
@@ -34,6 +34,8 @@ export async function importMongodb(platform: KmentsPlatform) {
     platform.sendNull(200)
 }
 
+const defObjectId = new ObjectId('000000000000000000000000')
+
 /** 导入 twikoo 评论数据 */
 async function importTwikooCommentData(db: Db) {
     const config = loadConfig()
@@ -42,57 +44,66 @@ async function importTwikooCommentData(db: Db) {
     const urls = (await oldCollection.aggregate([{
         $group: { _id: null, urls: { $addToSet: '$url' }}
     }]).toArray())[0].urls as string[]
-    for (let url of urls) {
+    const filter = config.importer?.filter
+    const urlMapper = config.importer?.urlMapper
+    await Promise.all(urls.map(async url => {
         const pageId = config.unique(url)
         const newCollection = newDb.collection(`c-${pageId}`)
-        const cursor = oldCollection.find(
-            {url}, {
-                projection: {
+        const array = await oldCollection.aggregate([
+            {$match: {url}},
+            {
+                $project: {
                     _id: true, url: true, ip: true,
-                    nick: true, link: true,
-                    mail: true, mailMd5: true,
+                    nick: true, link: true, mail: true,
                     comment: true,
-                    rid: true, pid: true, created: true
-                }
-            }
-        ).limit(50)
-        const subCounts = new Map<string, [ObjectId, number]>()
-        while (true) {
-            const array = await cursor.toArray()
-            if (array.length == 0) break
-            for (let item of array) {
-                item.url = config.importer?.urlMapper?.('twikoo', item.url) ?? item.url
-                item.mapId = new ObjectId(Math.floor(item.created / 1000))
-                if (item.rid) {
-                    const count = (subCounts.get(item.rid)?.[1] ?? 0) + 1
-                    subCounts.set(item.rid, [item.mapId, count])
-                    if (item.rid != item.pid) {
-                        item.at = [item.pid]
+                    rid: true, pid: true,
+                    created: {
+                        $floor: {$divide: ['$created', 1000]}
                     }
                 }
             }
-            await newCollection.insertMany(array.map(it => ({
-                _id: it.mapId,
-                name: it.nick,
-                email: it.mail,
-                emailMd5: it.mailMd5,
-                link: it.link,
-                ip: it.ip,
-                location: findIPv4(it.ip) ?? '未知',
-                reply: it.rid,
-                at: it.at
-            })))
+        ]).toArray()
+        if (array.length == 0) return
+        const subCounts = new Map<string, [ObjectId, number]>()
+        function readCounts(key: string) {
+            let array = subCounts.get(key)
+            if (!array) {
+                array = [defObjectId, 0]
+                subCounts.set(key, array)
+            }
+            return array
         }
-        if (subCounts.size == 0) continue
-        await newCollection.bulkWrite(Array.from(subCounts).map(it => ({
-            updateOne: {
-                filter: {_id: it[1][0]},
-                update: {
-                    $set: {subCount: it[1][1]}
+        for (let document of array) {
+            if (filter && !filter('twikoo', document))
+                continue
+            if (urlMapper)
+                document.url = urlMapper('twikoo', document.url)
+            document.mapId = new ObjectId(document.created)
+            readCounts(document._id.toHexString())[0] = document.mapId
+            if (document.rid) {
+                ++readCounts(document.rid)[1]
+                if (document.rid != document.pid) {
+                    document.at = [document.pid]
+                }
+            }
+        }
+        await newCollection.insertMany(array.map(document => ({
+            insertOne: {
+                document: {
+                    _id: document.mapId,
+                    name: document.nick,
+                    email: document.mail,
+                    emailMd5: calcHash('md5', document.mail.toLowerCase()),
+                    link: document.link,
+                    ip: document.ip,
+                    location: findIPv4(document.ip) ?? '未知',
+                    reply: document.rid,
+                    at: document.at.map((it: string) => subCounts.get(it)?.[0] || undefined),
+                    subCount: subCounts.get(document._id)?.[1] || undefined
                 }
             }
         })))
-    }
+    }))
 }
 
 /** 导入 twikoo 的统计数据 */

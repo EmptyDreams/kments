@@ -127,6 +127,8 @@ export interface KmentsConfigTemplate {
     /** 非管理员用户评论修改时间限制（单位 s） */
     commentUpdateTimeLimit?: number
     importer?: {
+        /** 过滤器 */
+        filter?: (type: DataType, document: any) => boolean
         /** url 映射器 */
         urlMapper?: (type: DataType, url: string) => string
     }
