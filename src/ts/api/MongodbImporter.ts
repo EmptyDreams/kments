@@ -90,18 +90,24 @@ async function importTwikooCommentData(db: Db) {
                 }
             }
         }
-        await newCollection.insertMany(array.map(document => ({
-            _id: document.mapId,
-            name: document.nick,
-            email: document.mail,
-            emailMd5: calcHash('md5', document.mail.toLowerCase()),
-            link: document.link,
-            ip: document.ip,
-            location: findIPv4(document.ip) ?? '未知',
-            reply: document.rid,
-            at: document.at?.map((it: string) => subCounts.get(it)?.[0] || undefined),
-            subCount: subCounts.get(document._id)?.[1] || undefined
-        })))
+        await newCollection.insertMany(array.map(document => {
+            const item: any = {
+                _id: document.mapId,
+                name: document.nick,
+                email: document.mail,
+                emailMd5: calcHash('md5', document.mail.toLowerCase()),
+                link: document.link,
+                ip: document.ip,
+                location: findIPv4(document.ip) ?? '未知',
+                reply: document.rid,
+                at: document.at?.map((it: string) => subCounts.get(it)?.[0]),
+                subCount: subCounts.get(document._id)?.[1]
+            }
+            for (let key in item) {
+                if (!item[key]) delete item[key]
+            }
+            return item
+        }))
     }))
 }
 
