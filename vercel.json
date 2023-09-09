@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0"
+          "value": "public, max-age=99"
         },
         {
           "key": "Access-Control-Allow-Credentials",
@@ -19,22 +19,11 @@
     }
   ],
   "rewrites": [
-    {"source": "/get-comments(\/?)?:path*", "destination": "/api/get-comments/?:path*"},
-    {"source": "/post-comment/", "destination": "/api/post-comment/"},
-    {"source": "/get-recent-comments/", "destination": "/api/get-recent-comments/"},
-    {"source": "/admin-certificate/", "destination": "/api/admin-certificate/"},
-    {"source": "/auth-certificate/", "destination": "/api/auth-certificate/"},
-    {"source": "/log-out/", "destination": "/api/log-out/"},
-    {"source": "/delete-comments/", "destination": "/api/delete-comments/"},
-    {"source": "/hide-comments/", "destination": "/api/hide-comments/"},
-    {"source": "/update-comment/", "destination": "/api/update-comment/"},
-    {"source": "/count-visit/", "destination": "/api/count-visit"},
-    {"source": "/get-pages-view/", "destination": "/api/get-pages-view/"},
-    {"source": "/import-mongodb/", "destination": "/api/import-mongodb/"}
+    {"source": "/(.*)", "destination": "/api/index/"}
   ],
   "redirects": [
     {"source": "/private", "destination": "/404.json", "permanent": true},
-    {"source": "/api/lib", "destination": "/404.json", "permanent": true},
+    {"source": "/api", "destination": "/404.json", "permanent": true},
     {"source": "/LICENSE", "destination": "/404.json", "permanent": true},
     {"source": "/README.md", "destination": "/404.json", "permanent": true}
   ]
