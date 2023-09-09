@@ -1,7 +1,6 @@
 import {VercelRequest, VercelResponse} from '@vercel/node'
 import {findOnVercel} from 'ip-china-location'
 import path from 'path'
-import * as zlib from 'zlib'
 
 export class KmentsPlatform {
 
@@ -100,36 +99,15 @@ export class KmentsPlatform {
 
     /** 向客户端发送文本数据 */
     sendText(statusCode: number, text: string) {
-        const acceptEncoding = this.readHeader('accept-encoding')
-        let zipped: string | Buffer = text
-        if (acceptEncoding) {
-            if (acceptEncoding.includes('br')) {
-                this.setHeader('Content-Encoding', 'br')
-                zipped = zlib.brotliCompressSync(text)
-            } else if (acceptEncoding.includes('gzip')) {
-                this.setHeader('Content-Encoding', 'gzip')
-                zipped = zlib.gzipSync(text)
-            } else if (acceptEncoding.includes('deflate')) {
-                this.setHeader('Content-Encoding', 'deflate')
-                zipped = zlib.deflateSync(text)
-            }
-        }
-        switch (this.platform) {
-            case KmentsPlatformType.VERCEL:
-                (this.response as VercelResponse).status(statusCode).send(zipped)
-                break
-            default:
-                throw `unknowns platform: ${this.platform}`
-        }
+        this.response.status(statusCode).send(text)
     }
 
     /** 发送一个 JSON 数据 */
     sendJson(statusCode: number, data?: any) {
-        this.setHeader('Content-Type', 'application/json')
-        this.sendText(statusCode, JSON.stringify({
+        this.response.status(200).json({
             status: statusCode,
             ...data
-        }))
+        })
     }
 
     /** 发送一个空响应 */
