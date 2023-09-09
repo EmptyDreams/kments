@@ -157,13 +157,12 @@ export async function rebuildRecentComments(cache?: string[]) {
         if (list.length > 10)
             list.pop()
     }
-    const idFilter = list.length == 0 ? {} : {
-        _id: {$lt: list[list.length - 1].id}
-    }
     async function findAll(collection: Collection): Promise<Element[]> {
         const array = await collection.find({
             reply: {$exists: false},
-            ...idFilter
+            ...(list.length == 0 ? {} : {
+                _id: {$lt: list[list.length - 1].id}
+            })
         }, {
             projection: {_id: true}
         }).limit(10)
