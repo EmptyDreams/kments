@@ -55,7 +55,7 @@ async function importTwikooCommentData(db: Db) {
                 }
             }
         ).limit(10)
-        const subCounts = new Map<string, [any, number]>()
+        const subCounts = new Map<string, [ObjectId, number]>()
         while (true) {
             const array = await cursor.toArray()
             if (array.length == 0) break
@@ -64,7 +64,7 @@ async function importTwikooCommentData(db: Db) {
                 item.mapId = new ObjectId(Math.floor(item.created / 1000))
                 if (item.rid) {
                     const count = (subCounts.get(item.rid)?.[1] ?? 0) + 1
-                    subCounts.set(item.rid, [item._id, count])
+                    subCounts.set(item.rid, [item.mapId, count])
                     if (item.rid != item.pid) {
                         item.at = [item.pid]
                     }
