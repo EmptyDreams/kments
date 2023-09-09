@@ -1,4 +1,4 @@
-[submodule "api/lib"]
-	path = api/lib
+[submodule "core"]
+	path = core
 	url = git@github.com:EmptyDreams/kments.git
 	branch = common
