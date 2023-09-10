@@ -21,7 +21,7 @@ export async function getRecently(platform: KmentsPlatform) {
     const list = await connectRedis().zrevrangebyscore(
         'recentComments',
         '+inf', 10,
-        'LIMIT', 0, info.limit - 1
+        'LIMIT', 0, info.limit
     )
     if (!list || list.length == 0)
         return platform.sendJson(200, {data: []})
