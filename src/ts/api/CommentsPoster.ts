@@ -77,7 +77,15 @@ async function pushNewCommentToRedis(pageId: string, body: CommentBody) {
     const date = id.getTimestamp().getTime()
     await execPipeline(
         connectRedis().pipeline()
-            .zadd(key, date, `${id.toHexString()}:${pageId}`)
+            .zadd(key, date, JSON.stringify({
+                page: pageId,
+                id: body._id,
+                name: body.name,
+                email: body.emailMd5,
+                link: body.link,
+                location: body.location,
+                content: HTMLParser.parse(body.content).text
+            }))
             .zpopmin(key)
     )
 }
