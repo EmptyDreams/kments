@@ -1,12 +1,12 @@
 import {AnyBulkWriteOperation, Db, ObjectId} from 'mongodb'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
-import {connectRedis} from '../RedisOperator'
 import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 import {CommentBody} from './CommentsPoster'
-import {rebuildRecentComments} from './RecentlyGetter'
+import {loadRecentlyBody, rebuildRecentComments, RecentlyBody} from './RecentlyGetter'
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * 删除评论
  *
@@ -22,7 +22,7 @@ export async function deleteComments(platform: KmentsPlatform) {
         return platform.sendNull(403)
     const {config} = checkResult
     const body = platform.readBodyAsJson()
-    const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
+    const recentComments = await loadRecentlyBody()
     const oldLength = recentComments.length
     const db = connectDatabase()
     await Promise.all(
@@ -35,7 +35,7 @@ export async function deleteComments(platform: KmentsPlatform) {
 }
 
 async function deleteCommentsFromCollection(
-    db: Db, pageId: string, list: string[], recentComments: string[]
+    db: Db, pageId: string, list: string[], recentComments: RecentlyBody[]
 ) {
     const collection = db.collection<CommentBody>(`c-${pageId}`)
     const decrease = new Map<string, number>()
@@ -50,7 +50,7 @@ async function deleteCommentsFromCollection(
             if (!list.includes(reply))
                 decrease.set(reply, (decrease.get(reply) ?? 0) - 1)
         } else {
-            const index = recentComments.findIndex(it => it.startsWith(commentId))
+            const index = recentComments.findIndex(it => it.id.toHexString() == commentId)
             if (index >= 0) recentComments.splice(index, 1)
             result.push({
                 deleteMany: {filter: {reply: commentId}}

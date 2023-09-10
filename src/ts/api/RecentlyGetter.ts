@@ -3,8 +3,8 @@ import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
 import {initRequest} from '../utils'
-import {extractReturnDate, readCommentsFromDb} from './CommentsGetter'
 import {CommentBody} from './CommentsPoster'
+import HTMLParser from 'fast-html-parser'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -18,42 +18,8 @@ export async function getRecently(platform: KmentsPlatform) {
     const checkResult = await initRequest(platform, 'gets', 'GET')
     if (!checkResult) return
     const info = extractInfo(platform)
-    const list = await connectRedis().zrevrangebyscore(
-        'recentComments',
-        '+inf', 10,
-        'LIMIT', 0, info.limit
-    )
-    if (!list || list.length == 0)
-        return platform.sendJson(200, {data: []})
-    const db = connectDatabase()
-    const map = new Map<string, ObjectId[]>()
-    list.forEach(it => {
-        const [id, pageId] = it.split(':', 2)
-        let idList = map.get(pageId)
-        if (!idList) idList = []
-        idList.push(new ObjectId(id))
-        map.set(pageId, idList)
-    })
-    const task:  Promise<WithId<Document>[]>[] = []
-    for (let [pageId, ids] of map) {
-        db.collection(pageId)
-        task.push(
-            readCommentsFromDb(
-                db.collection(pageId), {_id: {$in: ids}}
-            ).toArray()
-        )
-    }
-    const array = await Promise.all(task)
-    const resultList = array.flatMap(
-        list =>
-            list.map(it => extractReturnDate(it as CommentBody))
-    )
-    resultList.sort((a, b) => {
-        if (a.id < b.id) return 1
-        if (a.id == b.id) return 0
-        return -1
-    })
-    platform.sendJson(200, {data: resultList})
+    const list = await loadRecentlyBody(info.limit)
+    platform.sendJson(200, {data: list})
 }
 
 function extractInfo(platform: KmentsPlatform): RequestInfo {
@@ -71,28 +37,39 @@ interface RequestInfo {
     limit: number
 }
 
+export interface RecentlyBody {
+    pageId: string,
+    id: ObjectId,
+    name: string,
+    email: string,
+    link?: string,
+    location: string,
+    content: string
+}
+
+/** 加载最近评论列表 */
+export async function loadRecentlyBody(limit: number = 10): Promise<RecentlyBody[]> {
+    const list = await connectRedis().zrevrangebyscore(
+        'recentComments',
+        '+inf', 10,
+        'LIMIT', 0, limit
+    )
+    return list.map(it => {
+        const json = JSON.parse(it)
+        json.id = new ObjectId(json.id)
+        return json
+    })
+}
+
 /**
  * 重建最近评论索引表
- * @param cache 现有的队列（按发布日期从新到旧排列）
+ * @param list 现有的队列（按发布日期从新到旧排列）
  */
-export async function rebuildRecentComments(cache?: string[]) {
-    type Element = { id: ObjectId, pageId: string }
-    const list: Element[] = []
-    if (cache) {
-        list.push(
-            ...cache.map(it => {
-                const data = it.split(':', 2)
-                return {
-                    id: new ObjectId(data[0]),
-                    pageId: data[1]
-                }
-            })
-        )
-    }
+export async function rebuildRecentComments(list: RecentlyBody[] = []) {
     const db = connectDatabase()
     const collections = (await db.collections()).filter(it => it.collectionName.startsWith('c-'))
 
-    function insertElement(ele: Element) {
+    function insertElement(ele: RecentlyBody) {
         let index = list.findIndex(it => it.id.getTimestamp().getTime() < ele.id.getTimestamp().getTime())
         if (index == -1) index = list.length
         list.splice(index, 0, ele)
@@ -100,16 +77,24 @@ export async function rebuildRecentComments(cache?: string[]) {
             list.pop()
     }
 
-    async function findAll(collection: Collection): Promise<Element[]> {
+    async function findAll(collection: Collection): Promise<RecentlyBody[]> {
         const array = await collection.find({
             reply: {$exists: false},
             ...(list.length == 0 ? {} : {
                 _id: {$lt: list[list.length - 1].id}
             })
         }, {
-            projection: {_id: true}
+            projection: {_id: true, name: true, emailMd5: true, link: true, content: true, location: true}
         }).sort({_id: -1}).limit(10).toArray()
-        return array.map(it => ({id: it._id, pageId: collection.collectionName}))
+        return array.map(it => ({
+            pageId: collection.collectionName,
+            id: it._id,
+            name: it.name,
+            email: it.emailMd5,
+            link: it.link,
+            content: it.content,
+            location: it.location
+        }))
     }
 
     async function sequence() {
@@ -138,7 +123,10 @@ export async function rebuildRecentComments(cache?: string[]) {
             .zremrangebyscore('recentComments', '-inf', '+inf')
             .zadd(
                 'recentComments',
-                ...list.flatMap(it => [it.id.getTimestamp().getTime(), `${it.id}:${it.pageId}`])
+                ...list.flatMap(it => {
+                    it.content = HTMLParser.parse(it.content).text
+                    return [it.id.getTimestamp().getTime(), JSON.stringify(it)]
+                })
             )
     )
 }

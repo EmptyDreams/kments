@@ -1,12 +1,20 @@
 import {ObjectId} from 'mongodb'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
-import {connectRedis} from '../RedisOperator'
 import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 import {getAuthEmail} from './AuthCertificate'
-import {rebuildRecentComments} from './RecentlyGetter'
+import {loadRecentlyBody, rebuildRecentComments} from './RecentlyGetter'
 
+// noinspection JSUnusedGlobalSymbols
+/**
+ * 隐藏指定评论
+ *
+ * POST: json {
+ *     page: string     # 要隐藏的评论所在页面
+ *     values: string[] # 要隐藏的评论的 ID
+ * }
+ */
 export async function hideComments(platform: KmentsPlatform) {
     const checkResult = await initRequest(platform, 'hide', 'PUT')
     if (!checkResult) return
@@ -31,9 +39,11 @@ export async function hideComments(platform: KmentsPlatform) {
 }
 
 async function updateRecently(values: string[]) {
-    const recentComments = await connectRedis().zrevrangebyscore('recentComments', '+inf', 10)
+    const recentComments = await loadRecentlyBody()
     const oldLength = recentComments.length
-    const removed = recentComments.filter(recently => !values.find(it => recently.startsWith(it)))
+    const removed = recentComments.filter(
+        recently => !values.find(it => recently.id.toHexString() == it)
+    )
     if (removed.length != oldLength)
         await rebuildRecentComments(removed)
 }
