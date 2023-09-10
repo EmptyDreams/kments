@@ -49,9 +49,9 @@ export async function getRecently(platform: KmentsPlatform) {
             list.map(it => extractReturnDate(it as CommentBody))
     )
     resultList.sort((a, b) => {
-        if (a.id < b.id) return -1
+        if (a.id < b.id) return 1
         if (a.id == b.id) return 0
-        return 1
+        return -1
     })
     platform.sendJson(200, {data: resultList})
 }
