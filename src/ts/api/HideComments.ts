@@ -2,9 +2,10 @@ import {ObjectId} from 'mongodb'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis} from '../RedisOperator'
-import {initRequest, rebuildRecentComments} from '../utils'
+import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
 import {getAuthEmail} from './AuthCertificate'
+import {rebuildRecentComments} from './RecentlyGetter'
 
 export async function hideComments(platform: KmentsPlatform) {
     const checkResult = await initRequest(platform, 'hide', 'PUT')

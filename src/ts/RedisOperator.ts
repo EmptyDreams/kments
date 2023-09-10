@@ -1,7 +1,7 @@
 import Redis, {RedisOptions} from 'ioredis'
 import {ChainableCommander} from 'ioredis/built/utils/RedisCommander'
+import {rebuildRecentComments} from './api/RecentlyGetter'
 import {loadConfig} from './ConfigLoader'
-import {rebuildRecentComments} from './utils'
 
 let redis: Redis
 

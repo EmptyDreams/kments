@@ -4,8 +4,9 @@ import {loadConfig} from '../ConfigLoader'
 import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
-import {calcHash, initRequest, rebuildRecentComments} from '../utils'
+import {calcHash, initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
+import {rebuildRecentComments} from './RecentlyGetter'
 
 export type DataType = 'twikoo'
 
