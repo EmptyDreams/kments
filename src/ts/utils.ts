@@ -165,8 +165,7 @@ export async function rebuildRecentComments(cache?: string[]) {
             })
         }, {
             projection: {_id: true}
-        }).limit(10)
-            .toArray()
+        }).sort({_id: -1}).limit(10).toArray()
         return array.map(it => ({id: it._id, pageId: collection.collectionName}))
     }
     async function sequence() {
