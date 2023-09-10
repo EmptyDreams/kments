@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=99"
+          "value": "public, max-age=600"
         },
         {
           "key": "Access-Control-Allow-Credentials",
