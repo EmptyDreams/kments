@@ -79,7 +79,8 @@ export function readCommentsFromDb(collection: Collection, filter: Filter<Docume
             location: true,
             content: true,
             subCount: true,
-            hide: true
+            hide: true,
+            state: true
         }
     })
 }
@@ -94,7 +95,8 @@ export function extractReturnDate(body: CommentBody): any {
         location: body.location,
         content: body.content,
         subCount: body.subCount,
-        hide: body.hide
+        hide: body.hide,
+        state: body.state
     }
     for (let key in result) {
         if (!result[key]) delete result[key]

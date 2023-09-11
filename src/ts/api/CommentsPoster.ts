@@ -7,6 +7,7 @@ import {sendNotice, sendReplyTo} from '../Email'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
 import {calcHash, checkEmail, initRequest} from '../utils'
+import {verifyUserState} from './AdminCertificate'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -28,7 +29,7 @@ export async function postComment(platform: KmentsPlatform) {
     if (!checkResult) return
     const {ip, location} = checkResult
     // 提取评论内容
-    const {body, pageId, pageTitle, pageUrl, msg} = extractInfo(platform, ip, location!) as any
+    const {body, pageId, pageTitle, pageUrl, msg} = await extractInfo(platform, ip, location!) as any
     if (msg) return platform.sendJson(400, {msg})
     // 检查是否允许发布
     const commentChecked = checkComment(body, pageId)
@@ -164,9 +165,9 @@ async function reply(collection: Collection<CommentBody>, body: CommentBody, tit
 }
 
 /** 从请求中提取评论信息 */
-function extractInfo(
+async function extractInfo(
     platform: KmentsPlatform, ip: string, location: string
-): { body: CommentBody, pageId: string, pageTitle?: string, pageUrl: string } | { msg: string } {
+): Promise<{ body: CommentBody, pageId: string, pageTitle?: string, pageUrl: string } | { msg: string }> {
     const json = platform.readBodyAsJson()
     const list = ['name', 'email', 'page', 'content', 'pageTitle']
     for (let key of list) {
@@ -180,7 +181,8 @@ function extractInfo(
         emailMd5: calcHash('md5', json.email.toLowerCase()),
         link: json.link,
         ip, location,
-        content: json.content
+        content: json.content,
+        state: await verifyUserState(platform, json.email)
     }
     if ('reply' in json)
         result.reply = json.reply
@@ -248,5 +250,10 @@ export interface CommentBody extends Document {
     /** 要 at 的评论 */
     at?: string[] | string,
     /** 是否是隐藏评论 */
-    hide?: boolean
+    hide?: boolean,
+    state: CommentState
+}
+
+export enum CommentState {
+    TOURIST, USER, ADMIN
 }

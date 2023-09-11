@@ -1,6 +1,8 @@
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis} from '../RedisOperator'
 import {calcHash, initRequest, isDev} from '../utils'
+import {verifyAuth} from './AuthCertificate'
+import {CommentState} from './CommentsPoster'
 
 const cookieKey = 'kments-admin-id'
 
@@ -30,4 +32,11 @@ export async function verifyAdminStatus(platform: KmentsPlatform): Promise<boole
     if (!value) return false
     const realId = await connectRedis().get('admin')
     return realId == value
+}
+
+/** 获取用户状态 */
+export async function verifyUserState(platform: KmentsPlatform, email: string): Promise<CommentState> {
+    if (await verifyAuth(platform, email)) return CommentState.USER
+    if (await verifyAdminStatus(platform)) return CommentState.ADMIN
+    return CommentState.TOURIST
 }
