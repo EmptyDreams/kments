@@ -210,7 +210,10 @@ function checkComment(body: CommentBody, pageId: string): true | string {
         return '页面 ID 长度过长'
     if (!checkEmail(body.email))
         return '用户邮箱格式错误'
-    const checker = loadConfig().commentChecker
+    const config = loadConfig()
+    if (body.state != CommentState.ADMIN && body.email.toLowerCase() != config.admin.email.toLowerCase())
+        return '用户禁止以管理员身份发布评论'
+    const checker = config.commentChecker
     if (checker.user) {
         const msg = checker.user(body.name, body.email, body.link)
         if (msg) return msg
