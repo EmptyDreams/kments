@@ -82,20 +82,32 @@ function generateCode(length: number): string {
     return result.toUpperCase()
 }
 
+const email2code = new Map<string, string>()
+const code2email = new Map<string, string>()
+
 /** 验证用户是否是指定用户 */
 export async function verifyUserAuth(platform: KmentsPlatform, email: string): Promise<0 | -1 | 1> {
+    const lowEmail = email.toLowerCase()
+    const verify = platform.readCookie('kments-login-code')
+    const cache = email2code.get(lowEmail)
+    if (cache) {
+        if (verify) {
+            return verify == cache ? 1 : -1
+        } else return -1
+    }
     const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOneAndUpdate(
         {email, update: {$gt: Date.now() - (30 * 24 * 60 * 60 * 1000)}},
         {$set: {update: Date.now()}},
         {projection: {verify: true}}
     )
-    const verify = platform.readCookie('kments-login-code')
     if (!verify)
         return (doc && 'verify' in doc) ? -1 : 0
     if (doc && 'verify' in doc && doc.verify == verify) {
         const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
         platform.setCookie(`kments-login-code=${verify}; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
+        email2code.set(lowEmail, verify)
+        code2email.set(verify, lowEmail)
         return 1
     }
     return -1
@@ -105,6 +117,8 @@ export async function verifyUserAuth(platform: KmentsPlatform, email: string): P
 export async function getUserEmail(platform: KmentsPlatform): Promise<string | undefined> {
     const verify = platform.readCookie('kments-login-code')
     if (!verify) return undefined
+    const cache = code2email.get(verify)
+    if (cache) return cache
     const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOneAndUpdate(
         {verify, update: {$gt: Date.now() - (30 * 24 * 60 * 60 * 1000)}},
@@ -112,8 +126,12 @@ export async function getUserEmail(platform: KmentsPlatform): Promise<string | u
         {projection: {email: true}}
     )
     if (doc && 'email' in doc) {
+        const email = doc.email as string
         const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
         platform.setCookie(`kments-login-code=${verify}; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
-        return doc.email as string
+        code2email.set(verify, email)
+        email2code.set(email, verify)
+        return email
     }
+    return undefined
 }
