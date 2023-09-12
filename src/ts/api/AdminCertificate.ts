@@ -36,7 +36,11 @@ export async function verifyAdminStatus(platform: KmentsPlatform): Promise<boole
 
 /** 获取用户状态 */
 export async function getAuthState(platform: KmentsPlatform, email: string): Promise<CommentState> {
-    if (await verifyUserAuth(platform, email)) return CommentState.USER
+    const state = await verifyUserAuth(platform, email)
+    switch (state) {
+        case 1: return CommentState.USER
+        case -1: return CommentState.THIEF
+    }
     if (await verifyAdminStatus(platform)) return CommentState.ADMIN
     return CommentState.TOURIST
 }

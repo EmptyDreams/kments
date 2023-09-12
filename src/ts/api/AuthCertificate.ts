@@ -83,21 +83,22 @@ function generateCode(length: number): string {
 }
 
 /** 验证用户是否是指定用户 */
-export async function verifyUserAuth(platform: KmentsPlatform, email: string): Promise<boolean> {
-    const verify = platform.readCookie('kments-login-code')
-    if (!verify) return false
+export async function verifyUserAuth(platform: KmentsPlatform, email: string): Promise<0 | -1 | 1> {
     const collection = connectDatabase().collection('login-verify')
     const doc = await collection.findOneAndUpdate(
         {email, update: {$gt: Date.now() - (30 * 24 * 60 * 60 * 1000)}},
         {$set: {update: Date.now()}},
         {projection: {verify: true}}
     )
+    const verify = platform.readCookie('kments-login-code')
+    if (!verify)
+        return (doc && 'verify' in doc) ? -1 : 0
     if (doc && 'verify' in doc && doc.verify == verify) {
         const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
         platform.setCookie(`kments-login-code=${verify}; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
-        return true
+        return 1
     }
-    return false
+    return -1
 }
 
 /** 获取当前用户的邮箱 */

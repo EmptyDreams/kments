@@ -1,5 +1,6 @@
 import * as HTMLParser from 'fast-html-parser'
 import {Collection, Document, ObjectId} from 'mongodb'
+import {platform} from 'os'
 import url from 'url'
 import {loadConfig} from '../ConfigLoader'
 import {connectDatabase} from '../DatabaseOperator'
@@ -8,6 +9,7 @@ import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
 import {calcHash, checkEmail, initRequest} from '../utils'
 import {getAuthState} from './AdminCertificate'
+import {getUserEmail} from './AuthCertificate'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -203,6 +205,8 @@ async function extractInfo(
  * @return {boolean|string} 返回 true 表示可以，否则表示不可以
  */
 function checkComment(body: CommentBody, pageId: string): true | string {
+    if (body.state == CommentState.THIEF)
+        return '禁止冒充已认证用户发布评论'
     const banChars = ['.', '*']
     if (banChars.find(it => pageId.includes(it)))
         return '页面 ID 不能包含英文句号和星号'
@@ -258,5 +262,5 @@ export interface CommentBody extends Document {
 }
 
 export enum CommentState {
-    TOURIST, USER, ADMIN
+    TOURIST, USER, ADMIN, THIEF
 }
