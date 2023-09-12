@@ -41,7 +41,11 @@ export async function certifyUser(platform: KmentsPlatform) {
                 const collection = connectDatabase().collection(`login-verify`)
                 await collection.bulkWrite([
                     {
-                        deleteOne: {filter:{email}}
+                        deleteMany: {
+                            filter: {
+                                $or: [{email}, {update: {$lt: Date.now() - (30 * 24 * 60 * 60 * 1000)}}]
+                            }
+                        }
                     },
                     {
                         insertOne: {
