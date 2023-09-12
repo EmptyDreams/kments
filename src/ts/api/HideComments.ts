@@ -3,7 +3,7 @@ import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
-import {getAuthEmail} from './AuthCertificate'
+import {getUserEmail} from './AuthCertificate'
 import {loadRecentlyBody, rebuildRecentComments} from './RecentlyGetter'
 
 // noinspection JSUnusedGlobalSymbols
@@ -27,7 +27,7 @@ export async function hideComments(platform: KmentsPlatform) {
     if (await verifyAdminStatus(platform)) {
         fails = await hideCommentsWithAdmin(pageId, values)
     } else {
-        const email = await getAuthEmail(platform)
+        const email = await getUserEmail(platform)
         if (!email) return platform.sendJson(200, {
             status: 401,
             msg: '未认证用户无权进行隐藏操作'

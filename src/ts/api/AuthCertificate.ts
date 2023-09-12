@@ -75,7 +75,7 @@ function generateCode(length: number): string {
 }
 
 /** 验证用户是否是指定用户 */
-export async function verifyAuth(platform: KmentsPlatform, email: string): Promise<boolean> {
+export async function verifyUserAuth(platform: KmentsPlatform, email: string): Promise<boolean> {
     const verify = platform.readCookie('kments-login-code')
     if (!verify) return false
     const collection = connectDatabase().collection('login-verify')
@@ -87,7 +87,7 @@ export async function verifyAuth(platform: KmentsPlatform, email: string): Promi
 }
 
 /** 获取当前用户的邮箱 */
-export async function getAuthEmail(platform: KmentsPlatform): Promise<string | undefined> {
+export async function getUserEmail(platform: KmentsPlatform): Promise<string | undefined> {
     const verify = platform.readCookie('kments-login-code')
     if (!verify) return undefined
     const collection = connectDatabase().collection('login-verify')

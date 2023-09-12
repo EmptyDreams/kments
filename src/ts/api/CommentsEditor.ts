@@ -3,7 +3,7 @@ import {connectDatabase} from '../DatabaseOperator'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {initRequest} from '../utils'
 import {verifyAdminStatus} from './AdminCertificate'
-import {getAuthEmail} from './AuthCertificate'
+import {getUserEmail} from './AuthCertificate'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -33,7 +33,7 @@ export async function updateComment(platform: KmentsPlatform) {
         else
             platform.sendJson(404)
     } else {
-        const email = await getAuthEmail(platform)
+        const email = await getUserEmail(platform)
         if (!email) return platform.sendJson(401, {msg: '未认证用户禁止修改评论内容'})
         const commentId = new ObjectId(id)
         const publishTime = Math.floor(commentId.getTimestamp().getTime() / 1000)

@@ -7,7 +7,7 @@ import {sendNotice, sendReplyTo} from '../Email'
 import {KmentsPlatform} from '../KmentsPlatform'
 import {connectRedis, execPipeline} from '../RedisOperator'
 import {calcHash, checkEmail, initRequest} from '../utils'
-import {verifyUserState} from './AdminCertificate'
+import {getAuthState} from './AdminCertificate'
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -182,7 +182,7 @@ async function extractInfo(
         link: json.link,
         ip, location,
         content: json.content,
-        state: await verifyUserState(platform, json.email)
+        state: await getAuthState(platform, json.email)
     }
     if ('reply' in json)
         result.reply = json.reply
