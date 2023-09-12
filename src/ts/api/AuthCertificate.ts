@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import {loadConfig} from '../ConfigLoader'
 import {connectDatabase} from '../DatabaseOperator'
 import {sendAuthCodeTo} from '../Email'
 import {KmentsPlatform} from '../KmentsPlatform'
@@ -44,7 +45,10 @@ export async function certifyUser(platform: KmentsPlatform) {
                     },
                     {
                         insertOne: {
-                            document: {email, verify: realId}
+                            document: {
+                                email, verify: realId,
+                                update: Date.now()
+                            }
                         }
                     }
                 ])
@@ -79,11 +83,17 @@ export async function verifyUserAuth(platform: KmentsPlatform, email: string): P
     const verify = platform.readCookie('kments-login-code')
     if (!verify) return false
     const collection = connectDatabase().collection('login-verify')
-    const doc = await collection.findOne({
-        email: email
-    }, {projection: {verify: true}})
-    if (!(doc && 'verify' in doc)) return false
-    return doc.verify == verify
+    const doc = await collection.findOneAndUpdate(
+        {email, update: {$gt: Date.now() - (30 * 24 * 60 * 60 * 1000)}},
+        {$set: {update: Date.now()}},
+        {projection: {verify: true}}
+    )
+    if (doc && 'verify' in doc && doc.verify == verify) {
+        const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
+        platform.setCookie(`kments-login-code=${verify}; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
+        return true
+    }
+    return false
 }
 
 /** 获取当前用户的邮箱 */
@@ -91,10 +101,14 @@ export async function getUserEmail(platform: KmentsPlatform): Promise<string | u
     const verify = platform.readCookie('kments-login-code')
     if (!verify) return undefined
     const collection = connectDatabase().collection('login-verify')
-    const doc = await collection.findOne(
-        {verify},
+    const doc = await collection.findOneAndUpdate(
+        {verify, update: {$gt: Date.now() - (30 * 24 * 60 * 60 * 1000)}},
+        {$set: {update: Date.now()}},
         {projection: {email: true}}
     )
-    if (!(doc && 'email' in doc)) return undefined
-    return doc.email
+    if (doc && 'email' in doc) {
+        const domain = isDev ? 'localhost' : loadConfig().admin.domUrl.host
+        platform.setCookie(`kments-login-code=${verify}; Max-Age=2592000; Domain=${domain}; Path=/; Secure; SameSite=None; HttpOnly;`)
+        return doc.email as string
+    }
 }
