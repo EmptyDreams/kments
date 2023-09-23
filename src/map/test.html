@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>测试页面</title>
+    <link rel="stylesheet" href="/main.css">
+    <script defer src="/main.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.kments = new Kments('kments', 'http://localhost:3000/', () => 'a', () => 'b', () => 'c')
+            kments.initFrameHtml()
+            kments.initEditor('请输入内容')
+        })
+    </script>
+</head>
+<body>
+    <div id="kments"></div>
+</body>
+</html>

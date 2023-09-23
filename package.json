@@ -3,15 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.1",
     "@types/fast-html-parser": "^1.0.2",
     "@types/node": "^20.5.0",
     "@types/node-fetch": "^2.6.4",
     "@types/nodemailer": "^6.4.9",
     "@types/seedrandom": "^3.0.5",
     "@vercel/node": "^2.15.10",
+    "postcss-import": "^15.1.0",
+    "rollup-plugin-html": "^0.2.1",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-serve": "^2.0.2",
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@wangeditor/editor": "^5.1.23",
     "fast-html-checker": "^1.1.0",
     "fast-html-parser": "^1.0.1",
     "ioredis": "^5.3.2",
