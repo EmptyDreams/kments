@@ -5,7 +5,7 @@
  * @param linkGetter {function():string} 获取用户主页
  * @constructor
  */
-function Kments(api, nameGetter, emailGetter, linkGetter) {
+export default function (api, nameGetter, emailGetter, linkGetter) {
     const fetchHelper = (method, type, params) => {
         const promise = method === 'GET' ?
             fetch(`${api}${type}/?${params}`) :

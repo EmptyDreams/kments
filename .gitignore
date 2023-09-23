@@ -7,5 +7,6 @@ node_modules/
 .idea/
 kments.iml
 core/
+dist/
 
 kmentsConfig.*
