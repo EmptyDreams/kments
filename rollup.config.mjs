@@ -15,7 +15,7 @@ export default {
     plugins: [
         resolve(),
         html({
-            include: 'src/map/*.html'
+            include: 'src/resources/*.html'
         }),
         postcss({
             extract: true,
@@ -24,7 +24,7 @@ export default {
         serve({
             open: false,
             contentBase: 'dist',
-            historyApiFallback: './src/map/test.html',
+            historyApiFallback: './src/resources/test.html',
             host: 'localhost',
             port: 4000
         })

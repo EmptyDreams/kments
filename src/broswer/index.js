@@ -1,8 +1,8 @@
 import Kments from './dom-api'
 import {createEditor, createToolbar} from '@wangeditor/editor'
-import frameHtml from '../map/frame.html'
-import richTextEditor from '../map/richTextEditor.html'
-import '../map/index.css'
+import frameHtml from '.././resources/frame.html'
+import richTextEditor from '.././resources/richTextEditor.html'
+import '.././resources/index.css'
 
 // noinspection JSUnusedGlobalSymbols
 /**
